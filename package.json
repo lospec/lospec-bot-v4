@@ -1,0 +1,23 @@
+{
+	"name": "lospec-discord-bot",
+	"version": "4.0.0",
+	"main": "bot.js",
+	"type": "module",
+	"scripts": {
+		"start": "node bot.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/lospec/lospec-bot-v4.git"
+	},
+	"author": "Lospec",
+	"license": "GPL-2.0-only",
+	"bugs": {
+		"url": "https://github.com/lospec/lospec-bot-v4/issues"
+	},
+	"homepage": "https://github.com/lospec/lospec-bot-v4#readme",
+	"dependencies": {
+		"discord.js": "^14.14.1",
+		"dotenv": "^16.3.2"
+	}
+}
