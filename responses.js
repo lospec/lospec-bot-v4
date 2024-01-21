@@ -13,7 +13,7 @@ client.once('ready', async c => {
 		let responseName = path.basename(responsePath, '.js');
 		if (!response.filter) {console.warn('response "'+responsePath+'" has no filter export'); continue;}
 		if (!response.execute) {console.warn('response "'+responsePath+'" has no execute export'); continue;}
-		if (!response.execute.constructor instanceof AsyncFunction) console.warn('response "'+responsePath+'" execute function is not async');
+		if (!response.execute.constructor.name == 'AsyncFunction') console.warn('response "'+responsePath+'" execute function is not async');
 		responsesList.push(response.config);
 		RESPONSES[responseName] = response.execute;
 		console.log('Loaded response:', responseName);
