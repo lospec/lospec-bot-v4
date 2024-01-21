@@ -6,7 +6,10 @@ dotenv.config();
 
 if (process.env.MONGO_CERT_FILE) {
 	try {await fs.access('./ca-certificate.crt');}
-	catch (err) {await fs.writeFile('./ca-certificate.crt', process.env.MONGO_CERT_FILE);}
+	catch (err) {
+		console.log('Writing MongoDB certificate to file...');
+		await fs.writeFile('./ca-certificate.crt', process.env.MONGO_CERT_FILE);
+	}
 }
 
 export default true;
