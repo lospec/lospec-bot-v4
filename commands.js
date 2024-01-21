@@ -12,6 +12,8 @@ client.once('ready', async c => {
 
 	for (let commandPath of commandFileList) {
 		let command = await import('./'+commandPath);
+		if (!command.config) {console.warn('command "'+commandPath+'" has no config export'); continue;}
+		if (!command.execute) {console.warn('command "'+commandPath+'" has no execute export'); continue;}
 		commandsList.push(command.config);
 		COMMANDS[command.config.name] = command.execute;
 		console.log('Loaded command:', '/'+command.config.name);
