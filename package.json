@@ -17,7 +17,12 @@
 	},
 	"homepage": "https://github.com/lospec/lospec-bot-v4#readme",
 	"dependencies": {
+		"@discordjs/rest": "^2.2.0",
 		"discord.js": "^14.14.1",
-		"dotenv": "^16.3.2"
+		"dotenv": "^16.3.2",
+		"glob": "^10.3.10"
+	},
+	"devDependencies": {
+		"data-store": "^4.0.3"
 	}
 }
