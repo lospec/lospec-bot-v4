@@ -24,6 +24,34 @@ Make sure you have a discord server set-up where you have admin permissions befo
 4. Create a file called `.env` on the root of the project
 5. Add `DISCORD_BOT_TOKEN=` to the file, then paste the token afterwards and save
 
+## Data Storage
+
+If you have access to a mongodb database, you can set it up to match the production database, or you instead use the local datastore option which just uses .json files.
+
+### MongoDB Database
+
+1. Create a MongoDB database
+2. Download your certificate and save it to `ca-certificate.crt`
+3. Add `MONGO_URI=` to the .env file with your connection string, and append `&tlsCAFile=ca-certificate.crt` to the end
+4. Add `DB=LospecBotV4` to the .env file 
+5. Run the bot and it will automatically create the necessary tables and documents and the appropriate values
+6. Edit the documents to fill in any blank values
+7. Reboot the bot
+
+Please note, if you update these documents manually by editing them, you must reboot the bot immediately for the changes to be recognizes. The data is stored in memory and overwrites the document whenever it's changed.
+
+
+### Local Datastore
+
+If you don't have access to a mongodb database, or find it too confusing to set up (understandably), you can just use the local option:
+
+1. Add `LOCAL_DATA_STORAGE=true` to the .env file
+2. Run the bot, and it will automatically create a `./_data` folder and the necessary .json files
+3. Edit the documents to fill in any blank values
+4. Reboot the bot
+
+Please note, if you update these files manually by editing them, you must reboot the bot immediately for the changes to be recognizes. The data is stored in memory and overwrites the file whenever it's changed.
+
 ## Running
 
 To run the bot, run the command `npm start` from the command line from the project root. 
@@ -47,3 +75,21 @@ Respond to a message that matches a filter
 Add a file to the `./responses` folder with the following exports:
 - `filter` - an async function that checks if the message should trigger a response
 - `execute` - an async function that is called when the filter matches
+
+## Data Storage
+
+To run the bot, you must have set up one of the two data storage options, explained above. Both options have identical APIs.
+
+First you must import the appropriate document from the data module:
+
+`import {CONFIG} from '../data.js';`
+
+Modules that use a lot of properties should be set up with their own data store, which is defined in the data module:
+
+`export const MYDATAMODULENAME = new Data('my-data-module-slug');`
+
+### Methods
+
+- **.get(** `<string>` key **)** - Get the value associated with the provided key
+- **.set(** `<string>` key, `<any>` value **)** - Set the value of the provided key to the provided value
+- **.assert(** `<string>` key, `<bool>` required *[optional]* **)** (async) - Ensure a value exists in the data store, and if not, create a blank value and throw an error (unless required is set to false). Must be awaited. This gives the developer a place to enter the value manually.

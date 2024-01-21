@@ -20,7 +20,8 @@
 		"@discordjs/rest": "^2.2.0",
 		"discord.js": "^14.14.1",
 		"dotenv": "^16.3.2",
-		"glob": "^10.3.10"
+		"glob": "^10.3.10",
+		"mongodb": "^6.3.0"
 	},
 	"devDependencies": {
 		"data-store": "^4.0.3"

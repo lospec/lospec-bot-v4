@@ -1,7 +1,4 @@
-import { promises as fs } from 'fs';
-await fs.readFile('.env').catch(() => fs.writeFile('.env', ''));
-import * as dotenv from 'dotenv';
-dotenv.config();
+
 ['DISCORD_BOT_TOKEN'].forEach(envVar => {if (!process.env[envVar]) throw new Error(`No ${envVar} provided in your .env file!`);});
 
 
@@ -13,9 +10,9 @@ const client = new Client({
 
 
 client.once('ready', async c => {
-	console.log('\nLospec Bot v4 is logged in\n');
+	console.log('Lospec Bot v4 is logged in');
+	client.guilds.cache.forEach(guild => {console.log('Joined server:', guild.name);});
 });
-
 
 client.login(process.env.DISCORD_BOT_TOKEN);
 

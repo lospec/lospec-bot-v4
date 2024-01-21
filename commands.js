@@ -11,7 +11,15 @@ client.once('ready', async c => {
 	let commandFileList = glob.sync('./commands/*.js');
 
 	for (let commandPath of commandFileList) {
-		let command = await import('./'+commandPath);
+		let commandName = path.basename(commandPath, '.js');
+		let command;
+		try { await import('./'+commandPath); }
+		catch (err) {
+			console.error('Failed to load command:', commandName);
+			console.error(err);
+			continue;
+		}
+
 		if (!command.config) {console.warn('command "'+commandPath+'" has no config export'); continue;}
 		if (!command.execute) {console.warn('command "'+commandPath+'" has no execute export'); continue;}
 		if (!command.execute.constructor.name == 'AsyncFunction') console.warn('command "'+commandPath+'" execute function is not async');
