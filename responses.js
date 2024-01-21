@@ -6,7 +6,7 @@ const RESPONSES = {};
 
 client.once('ready', async c => {
 	let responsesList = [];
-	let responseFileList = glob.sync('./commands/*.js');
+	let responseFileList = glob.sync('./responses/*.js');
 
 	for (let responsePath of responseFileList) {
 		let response = await import('./'+responsePath);
