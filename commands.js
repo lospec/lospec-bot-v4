@@ -2,6 +2,7 @@ import { REST } from '@discordjs/rest';
 import { Routes as DiscordRestRoutes } from 'discord-api-types/v9';
 import {glob} from 'glob';
 import client from './client.js';
+import path from 'path';
 const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_BOT_TOKEN);
 
 const COMMANDS = {};
@@ -13,15 +14,15 @@ client.once('ready', async c => {
 	for (let commandPath of commandFileList) {
 		let commandName = path.basename(commandPath, '.js');
 		let command;
-		try { await import('./'+commandPath); }
+		try { command = await import('./'+commandPath); }
 		catch (err) {
 			console.error('Failed to load command:', commandName);
 			console.error(err);
 			continue;
 		}
 
-		if (!command.config) {console.warn('command "'+commandPath+'" has no config export'); continue;}
-		if (!command.execute) {console.warn('command "'+commandPath+'" has no execute export'); continue;}
+		if (!command.config) {console.warn('⚠ Command "'+commandPath+'" has no config export'); continue;}
+		if (!command.execute) {console.warn('⚠ Command "'+commandPath+'" has no execute export'); continue;}
 		if (!command.execute.constructor.name == 'AsyncFunction') console.warn('command "'+commandPath+'" execute function is not async');
 		commandsList.push(command.config);
 		COMMANDS[command.config.name] = command.execute;
@@ -29,9 +30,13 @@ client.once('ready', async c => {
 	}
 
 	if (commandsList.length == 0) return console.warn('No commands found');
-	rest.put(DiscordRestRoutes.applicationGuildCommands(client.user.id,process.env.GUILD), {body: commandsList})
-		.then(e => console.log('Loaded ',commandsList.length,' commands'))
-		.catch(err=> console.error('Failed to load commands:',err))
+
+	client.guilds.cache.forEach(guild => {
+		console.log('Joined server:', guild.name);
+		rest.put(DiscordRestRoutes.applicationGuildCommands(client.user.id,guild.id), {body: commandsList})
+			.then(e => console.log('Added commands to "'+guild.name+'" guild'))
+			.catch(err=> console.error('Failed to add commands to "'+guild.name+'" guild'))
+	});
 });
 
 client.on('interactionCreate', async interaction => {
