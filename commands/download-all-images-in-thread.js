@@ -12,10 +12,11 @@ export const config = {
 };
 
 export const execute = async (interaction) => {
-	await interaction.deferReply();
+	let output = 'Downloading all images in thread...\n\n';
+	interaction.reply({ content: output, ephemeral: true });
+
 	if (!interaction.channel.isThread()) throw 'This command only works in threads';
 	
-	let output = 'Downloading all images in thread...\n\n';
 	interaction.editReply({ content: output+'fetching messages...', ephemeral: true });
 
 	let foundImages = [];
@@ -32,7 +33,7 @@ export const execute = async (interaction) => {
 			//loop through all the attachments in the message
 			m.attachments.forEach(a => {
 				console.log('attachment',a);
-				if (!a.contentType.startsWith('image/')) return;
+				if (!a.contentType?.startsWith('image/')) return;
 				images.push(a);
 			});
 		});
