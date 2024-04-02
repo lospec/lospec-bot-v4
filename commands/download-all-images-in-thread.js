@@ -12,11 +12,11 @@ export const config = {
 };
 
 export const execute = async (interaction) => {
+	await interaction.deferReply();
 	if (!interaction.channel.isThread()) throw 'This command only works in threads';
-	//await interaction.deferReply();
-
+	
 	let output = 'Downloading all images in thread...\n\n';
-	interaction.reply({ content: output+'fetching messages...', ephemeral: true });
+	interaction.editReply({ content: output+'fetching messages...', ephemeral: true });
 
 	let foundImages = [];
 
@@ -25,7 +25,18 @@ export const execute = async (interaction) => {
 	while (true) {
 		let messages = await interaction.channel.messages.fetch({limit: 100, before: lastMessageId});
 		if (messages.size == 0) break;
-		let images = messages.filter(m => m.attachments.size > 0).map(m => m.attachments.first().url);
+		
+		let images = [];
+
+		messages.filter(m => m.attachments.size > 0).forEach(m => {
+			//loop through all the attachments in the message
+			m.attachments.forEach(a => {
+				console.log('attachment',a);
+				if (!a.contentType.startsWith('image/')) return;
+				images.push(a);
+			});
+		});
+
 		foundImages.push(...images);
 		output += 'Fetched page '+page+' ('+messages.size+' messages), found '+images.length+' images\n';
 		interaction.editReply({ content: output, ephemeral: true });
@@ -43,11 +54,10 @@ export const execute = async (interaction) => {
 
 	let i = 1;
 	// download images
-	for (let url of foundImages) {
-		let filename = getFileNameFromUrl(url);
-		let res = await fetch(url);
+	for (let image of foundImages) {
+		let res = await fetch(image.url);
 		let buffer = await res.buffer();
-		await fs.writeFile (cacheFolder+'/'+filename, buffer);
+		await fs.writeFile (cacheFolder+'/'+image.name, buffer);
 		interaction.editReply({ content: output+'downloading images...\n'+i+'/'+foundImages.length, ephemeral: true });
 		i++;
 	}
@@ -71,10 +81,4 @@ export const execute = async (interaction) => {
 	});
 
 	console.log('Downloading images:', foundImages);
-
-}
-
-function getFileNameFromUrl (urlStr) {
-    const url = new URL(urlStr)
-    return path.basename(url.pathname)
 }
