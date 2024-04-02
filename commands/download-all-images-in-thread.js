@@ -13,11 +13,11 @@ export const config = {
 
 export const execute = async (interaction) => {
 	let output = 'Downloading all images in thread...\n\n';
-	interaction.reply({ content: output, ephemeral: true });
+	await interaction.reply({ content: output, ephemeral: true });
 
 	if (!interaction.channel.isThread()) throw 'This command only works in threads';
 	
-	interaction.editReply({ content: output+'fetching messages...', ephemeral: true });
+	await interaction.editReply({ content: output+'fetching messages...', ephemeral: true });
 
 	let foundImages = [];
 
@@ -40,14 +40,14 @@ export const execute = async (interaction) => {
 
 		foundImages.push(...images);
 		output += 'Fetched page '+page+' ('+messages.size+' messages), found '+images.length+' images\n';
-		interaction.editReply({ content: output, ephemeral: true });
+		await interaction.editReply({ content: output, ephemeral: true });
 		page++;
 		lastMessageId = messages.last().id;
 		if (messages.size < 100) break;
 	} 
 
 	output += 'Found '+foundImages.length+' images in total\n\n';
-	interaction.editReply({ content: output+'downloading images...', ephemeral: true });
+	await interaction.editReply({ content: output+'downloading images...', ephemeral: true });
 
 	let cacheFolder = './_cache/'+Math.random().toString(36).substring(7);
 
