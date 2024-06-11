@@ -2,7 +2,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 const client = new MongoClient(process.env.MONGO_URI);
 await client.connect();
 
-let db = client.db('LospecBotV4');
+let db = client.db(process.env.DATABASE_NAME || 'LospecBotV4');
 
 //check if the collection exists and create it if not
 let collections = await db.listCollections().toArray();
