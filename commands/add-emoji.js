@@ -47,6 +47,25 @@ export const config = {
 	]
 };
 
+//creat an action row with 2 buttons, "add emoji" and "cancel"
+const confirmationActionRow = {
+	type: 1,
+	components: [
+		{
+			type: 2,
+			style: 1,
+			label: 'Add Emoji',
+			customId: 'add_emoji'
+		},
+		{
+			type: 2,
+			style: 2,
+			label: 'Cancel',
+			customId: 'cancel'
+		}
+	]
+};
+
 export const execute = async (interaction) => {
 
 	//update repo to latest version
@@ -66,24 +85,14 @@ export const execute = async (interaction) => {
 		return;
 	}
 
-	//creat an action row with 2 buttons, "add emoji" and "cancel"
-	const actionRow = {
-		type: 1,
-		components: [
-			{
-				type: 2,
-				style: 1,
-				label: 'Add Emoji',
-				customId: 'add_emoji'
-			},
-			{
-				type: 2,
-				style: 2,
-				label: 'Cancel',
-				customId: 'cancel'
-			}
-		]
-	};
+	//make sure this emoji does not already exist in the server
+	const existingEmoji = interaction.guild.emojis.cache.find(e => e.name === emoji);
+	if (existingEmoji) {
+		await interaction.reply({content: 'The emoji `:'+emoji+':` already exists in the server. This command is for adding emojis that are in the archive, but not currently present on the server.', ephemeral: true});
+		return;
+	} else {
+		console.log('emoji does not exist in server');
+	}
 
 	//scale the emoji image
 	let emojiImageScaled = await scalePng(emojiPath);
@@ -99,7 +108,7 @@ export const execute = async (interaction) => {
 	await interaction.reply({
 		files: [new AttachmentBuilder(emojiImageScaled, {name: 'emoji.png'})],
 		embeds: [embed],
-		components: [actionRow],
+		components: [confirmationActionRow],
 	});
 
 };
