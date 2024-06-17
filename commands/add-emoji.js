@@ -3,6 +3,7 @@ import { simpleGit} from 'simple-git';
 import fsp from 'fs/promises';
 import path from 'path';
 import { PNG } from 'pngjs';
+import fetch from 'node-fetch';
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
@@ -11,10 +12,7 @@ const PRICE = 20;
 try {
 	await fsp.access(OUTPUT_PATH);
 	console.log('folder '+OUTPUT_PATH+' exists');
-	const git = simpleGit({baseDir: OUTPUT_PATH});
-	//update the repo to the latest version
-	await git.fetch('origin','main');
-	await git.checkout('main');
+	await updateEmojiArchiveToLatest();
 	console.log('updated emoji archive');
 } 
 catch (err) {
@@ -67,51 +65,79 @@ const confirmationActionRow = {
 };
 
 export const execute = async (interaction) => {
+	const emojiName = interaction.options.getString('emoji');
+	const emojiPath = path.join(OUTPUT_PATH,'current',emojiName+'.png');
+	let emojiImageScaled;
 
-	//update repo to latest version
-	const git = simpleGit({baseDir: OUTPUT_PATH});
-	await git.fetch('origin','main');
-	await git.checkout('main');
-
-	const emoji = interaction.options.getString('emoji');
-
-	//check if the emoji exists in the emoji archive
-	const emojiPath = path.join(OUTPUT_PATH,'current',emoji+'.png');
 	try {
-		await fsp.access(emojiPath );
+		await updateEmojiArchiveToLatest();
+		await checkIfUserCanAfford(interaction.user.id);
+		await checkIfEmojiIsInArchive(emojiPath);
+		await checkIfEmojiIsAlreadyInServer(interaction.guild, emojiName);
+		emojiImageScaled = await scalePng(emojiPath);
 	}
 	catch (err) {
-		await interaction.reply({content: 'Emoji not found in the Lospec Emoji Archive. Please make sure the emoji has been added to the archive before trying to add it.', ephemeral: true});
+		console.log('add emoji request failed:',err);
+		await interaction.reply({content: "Failed to add emoji. " + err.message, ephemeral: true});
 		return;
 	}
 
-	//make sure this emoji does not already exist in the server
-	const existingEmoji = interaction.guild.emojis.cache.find(e => e.name === emoji);
-	if (existingEmoji) {
-		await interaction.reply({content: 'The emoji `:'+emoji+':` already exists in the server. This command is for adding emojis that are in the archive, but not currently present on the server.', ephemeral: true});
-		return;
-	} else {
-		console.log('emoji does not exist in server');
-	}
-
-	//scale the emoji image
-	let emojiImageScaled = await scalePng(emojiPath);
-
-	//create an embed
 	const embed = {
 		title: 'Confirm Purchase',
-		description: 'You are adding the emoji `:'+emoji+':` to the server. \n\n This will cost you 20P. \n\n Are you sure you wish to do this?',
+		description: 'You are adding the emoji `:'+emojiName+':` to the server. \n\n This will cost you **20P**. \n\n Are you sure you wish to do this?',
 		thumbnail: {url: 'attachment://emoji.png'},
 	};
 
-	//send a message with the action row
 	await interaction.reply({
 		files: [new AttachmentBuilder(emojiImageScaled, {name: 'emoji.png'})],
 		embeds: [embed],
 		components: [confirmationActionRow],
 	});
-
 };
+
+async function updateEmojiArchiveToLatest () {
+	const git = simpleGit({baseDir: OUTPUT_PATH});
+	await git.fetch('origin','main');
+	await git.checkout('main');
+}
+
+async function checkIfEmojiIsInArchive (emojiPath) {
+	try {
+		await fsp.access(emojiPath);
+	}
+	catch (err) {
+		throw new Error('Emoji not found in the Lospec Emoji Archive. Please make sure the emoji has been added to the archive before trying to add it.');
+	}
+}
+
+async function checkIfEmojiIsAlreadyInServer (guild, emojiName) {
+	const existingEmoji = guild.emojis.cache.find(e => e.name === emojiName);
+	if (existingEmoji) 
+		throw new Error('Emoji already exists in server.');
+}
+
+async function checkIfUserCanAfford (userId) {
+	let balance;
+
+	try {
+		const response = await fetch('http://'+process.env.LOZPEKISTAN_BANK_API_ADDRESS+'/balance/'+userId, {
+			headers: {
+				Authorization: process.env.LOZPEKISTAN_BANK_API_KEY
+			}
+		});
+		console.log('response:',response);
+		const data = await response.json();
+		console.log('user balance:',data);
+		balance = data;
+	}
+	catch (err) {
+		console.error('Failed to check user balance',err);
+		throw new Error('Failed to check user balance');
+	}
+
+	if (balance > PRICE) return;
+	throw new Error('You do not have enough P to purchase this emoji. You need '+PRICE+'P, but you only have '+balance+'P.');
+}
 
 async function scalePng (imagePath, scale=4) {
 	const currentImage = await fsp.readFile(imagePath);
