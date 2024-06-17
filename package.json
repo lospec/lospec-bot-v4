@@ -24,6 +24,7 @@
 		"glob": "^10.3.10",
 		"mongodb": "^6.3.0",
 		"node-fetch": "^3.3.2",
+		"pngjs": "^7.0.0",
 		"simple-git": "^3.25.0"
 	},
 	"devDependencies": {
