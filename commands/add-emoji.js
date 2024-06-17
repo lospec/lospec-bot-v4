@@ -7,5 +7,5 @@ export const config = {
 };
 
 export const execute = async (interaction) => {
-
+	await interaction.reply({ content: 'This command is not implemented yet', ephemeral: true });
 };
