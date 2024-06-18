@@ -7,6 +7,7 @@ const ART_CHATS_CATEGORY_NAME = 'Art Chats';
 const LOSPEC_DAILIES_CHANNEL_NAME = 'lospec-dailies';
 
 export const filter = async (message) => {
+	if (!message.channel.parent) return false;
 	let isWithinArtChats = (message.channel.parent.name == ART_CHATS_CATEGORY_NAME);
 	let isInLospecDailiesChannel = (message.channel.name == LOSPEC_DAILIES_CHANNEL_NAME);
 	let hasAttachments = (message.attachments.size > 0);
