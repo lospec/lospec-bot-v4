@@ -8,7 +8,7 @@ import client from '../client.js';
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
-const PRICE = 20;
+const PRICE = 50;
 const API_REQUEST_OPTIONS = {headers: {Authorization: process.env.LOZPEKISTAN_BANK_API_KEY}};
 const API_URL = 'http://'+process.env.LOZPEKISTAN_BANK_API_ADDRESS;
 
