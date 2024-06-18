@@ -6,7 +6,8 @@ import client from '../client.js';
 import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
 import { scalePng } from '../util/scale-png.js';
 import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer } from '../util/emoji.js';
-
+import {CONFIG} from '../data.js';
+await CONFIG.assert('emojiChangesAnnouncementsChannelId');
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
@@ -141,6 +142,10 @@ async function confirmAddEmoji(interaction) {
 		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
 		await interaction.reply({content: "The emoji has been successfully added! \n\n"+emojiTag, ephemeral: true});
+		
+		//send announcement to emoji changes channel
+		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
+		await announcementChannel.send({content: '🎉 '+interaction.user.toString()+' has added the '+emojiTag+' `:'+emojiName+':` emoji to the server!'});
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);

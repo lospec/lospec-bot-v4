@@ -2,6 +2,7 @@ import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder
 import client from '../client.js';
 import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
 import { getEmojiOnServer, removeEmojiFromServer } from '../util/emoji.js';
+import {CONFIG} from '../data.js';
 
 const PRICE = 50;
 
@@ -88,6 +89,9 @@ async function confirmRemoveEmoji(interaction) {
 		await removeEmojiFromServer(interaction, emojiName);
 
 		await interaction.reply({content: "The `:"+emojiName+":` emoji has been successfully removed from the server. You monster.", ephemeral: true});
+	
+		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
+		await announcementChannel.send({content: '💀 '+interaction.user.toString()+' has killed the `:'+emojiName+':` emoji.'});
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
