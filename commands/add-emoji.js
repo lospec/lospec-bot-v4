@@ -88,7 +88,7 @@ export const execute = async (interaction) => {
 
 	const embed = {
 		title: 'Confirm Purchase',
-		description: 'You are adding the emoji `:'+emojiName+':` to the server. \n\n This will cost you **20P**. \n\n Are you sure you wish to do this?',
+		description: 'You are adding the emoji `:'+emojiName+':` to the server. \n\n This will cost you **'+PRICE+'P**. \n\n Are you sure you wish to do this?',
 		thumbnail: {url: 'attachment://emoji.png'},
 		author: {name: ':'+emojiName+':'},
 	};
