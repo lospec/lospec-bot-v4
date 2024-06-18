@@ -222,12 +222,25 @@ async function confirmAddEmoji(interaction) {
 
 		//make it happen
 		await takeUsersMoney(interaction.user.id);
+		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
-		await interaction.reply({content: "The emoji has been successfully added!", ephemeral: true});
+		await interaction.reply({content: "The emoji has been successfully added! \n\n"+emojiTag, ephemeral: true});
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
 		await interaction.reply({content: "Failed to add emoji. " + err.message, ephemeral: true});
 		return;
+	}
+}
+
+async function addEmojiToServer (interaction, emojiPath, emojiName) {
+	try {
+		const emojiImageScaled = await scalePng(emojiPath);
+		const emoji = await interaction.guild.emojis.create({ attachment: emojiImageScaled, name: emojiName });
+		console.log('added emoji:',emoji);
+		return emoji.toString();
+	} catch (err) {
+		console.error('Failed to add emoji to server',err);
+		throw new Error('Failed to add emoji to discord server');
 	}
 }
