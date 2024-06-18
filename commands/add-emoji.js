@@ -77,6 +77,7 @@ export const execute = async (interaction) => {
 		await checkIfUserCanAfford(interaction.user.id);
 		await checkIfEmojiIsInArchive(emojiPath);
 		await checkIfEmojiIsAlreadyInServer(interaction.guild, emojiName);
+		await checkIfServerHasFreeEmojiSlots(interaction.guild);
 		emojiImageScaled = await scalePng(emojiPath);
 	}
 	catch (err) {
@@ -219,6 +220,7 @@ async function confirmAddEmoji(interaction) {
 		await checkIfUserCanAfford(interaction.user.id);
 		await checkIfEmojiIsInArchive(emojiPath);
 		await checkIfEmojiIsAlreadyInServer(interaction.guild, emojiName);
+		await checkIfServerHasFreeEmojiSlots(interaction.guild);
 
 		//make it happen
 		await takeUsersMoney(interaction.user.id);
@@ -237,10 +239,22 @@ async function addEmojiToServer (interaction, emojiPath, emojiName) {
 	try {
 		const emojiImageScaled = await scalePng(emojiPath);
 		const emoji = await interaction.guild.emojis.create({ attachment: emojiImageScaled, name: emojiName });
-		console.log('added emoji:',emoji);
 		return emoji.toString();
 	} catch (err) {
 		console.error('Failed to add emoji to server',err);
 		throw new Error('Failed to add emoji to discord server');
 	}
+}
+
+const EMOJI_SLOTS_PER_TIER = [50,100,150,250];
+
+async function checkIfServerHasFreeEmojiSlots (guild) {
+	const premiumTier = guild.premiumTier;
+	const totalEmojiSlots = EMOJI_SLOTS_PER_TIER[premiumTier];
+	const usedEmojiSlots = (await guild.emojis.fetch()).size;
+	const freeEmojiSlots = totalEmojiSlots - usedEmojiSlots;
+	console.log('server has',freeEmojiSlots,'free emoji slots', {premiumTier, totalEmojiSlots, usedEmojiSlots});
+
+	if (freeEmojiSlots > 0) return;
+	throw new Error('The server currently has no free emoji slots.');
 }
