@@ -2,15 +2,15 @@ import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder
 import { simpleGit} from 'simple-git';
 import fsp from 'fs/promises';
 import path from 'path';
-import { PNG } from 'pngjs';
-import fetch from 'node-fetch';
 import client from '../client.js';
+import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
+import { scalePng } from '../util/scale-png.js';
+import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer } from '../util/emoji.js';
+
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
 const PRICE = 50;
-const API_REQUEST_OPTIONS = {headers: {Authorization: process.env.LOZPEKISTAN_BANK_API_KEY}};
-const API_URL = 'http://'+process.env.LOZPEKISTAN_BANK_API_ADDRESS;
 
 try {
 	await fsp.access(OUTPUT_PATH);
@@ -74,9 +74,9 @@ export const execute = async (interaction) => {
 
 	try {
 		await updateEmojiArchiveToLatest();
-		await checkIfUserCanAfford(interaction.user.id);
+		await checkIfUserCanAfford(interaction.user.id, PRICE);
 		await checkIfEmojiIsInArchive(emojiPath);
-		await checkIfEmojiIsAlreadyInServer(interaction.guild, emojiName);
+		await checkIfEmojiExistsOnServer(interaction.guild, emojiName);
 		await checkIfServerHasFreeEmojiSlots(interaction.guild);
 		emojiImageScaled = await scalePng(emojiPath);
 	}
@@ -115,92 +115,6 @@ async function checkIfEmojiIsInArchive (emojiPath) {
 	}
 }
 
-async function checkIfEmojiIsAlreadyInServer (guild, emojiName) {
-	const existingEmoji = guild.emojis.cache.find(e => e.name === emojiName);
-	if (existingEmoji) 
-		throw new Error('Emoji already exists in server.');
-}
-
-async function checkIfUserCanAfford (userId) {
-	let balance;
-
-	try {
-		const response = await fetch(API_URL+'/balance/'+userId, API_REQUEST_OPTIONS);
-		const data = await response.json();
-		console.log('got user balance:',data);
-		balance = data;
-	}
-	catch (err) {
-		console.error('Failed to check user balance',err);
-		throw new Error('Failed to check user balance');
-	}
-
-	if (balance > PRICE) return;
-	throw new Error('You do not have enough P to purchase this emoji. You need '+PRICE+'P, but you only have '+balance+'P.');
-}
-
-async function takeUsersMoney (userId) {
-	try {
-		const response = await fetch(API_URL+'/balance/'+userId, API_REQUEST_OPTIONS);
-		const data = await response.json();
-		console.log('got user balance:',data);
-		let balance = data;
-		if (balance < PRICE) 
-			throw new Error('You do not have enough P to purchase this emoji. You need '+PRICE+'P, but you only have '+balance+'P.');
-
-
-		//post request to /balance/userId with body {amount:price}
-		const response2 = await fetch(API_URL+'/balance/'+userId, { 
-			method: 'POST',
-			headers: {
-				...API_REQUEST_OPTIONS.headers, 
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({amount: -PRICE})
-		});
-		if (!response2.ok) 
-			throw new Error('Money taking request failed: '+response2.status, response2.statusText);
-		const data2 = await response2.json();
-
-		console.log('withdrew money:',data2);
-	}
-	catch (err) {
-		console.error('Failed to withdraw money',err);
-		throw new Error('Failed to withdraw money');
-	}
-}
-
-async function scalePng (imagePath, scale=4) {
-	const currentImage = await fsp.readFile(imagePath);
-	const sourcePng = PNG.sync.read(currentImage);
-	const targetPng = new PNG({width: sourcePng.width*scale, height: sourcePng.height*scale});
-
-	for (let y = 0; y < sourcePng.height; y++) {
-		for (let x = 0; x < sourcePng.width; x++) {
-			const idx = (sourcePng.width * y + x) << 2;
-			const color = {
-				r: sourcePng.data[idx],
-				g: sourcePng.data[idx+1],
-				b: sourcePng.data[idx+2],
-				a: sourcePng.data[idx+3]
-			};
-
-			for (let dy = 0; dy < scale; dy++) {
-				for (let dx = 0; dx < scale; dx++) {
-					const targetIdx = (targetPng.width * (y*scale + dy) + (x*scale + dx)) << 2;
-					targetPng.data[targetIdx] = color.r;
-					targetPng.data[targetIdx+1] = color.g;
-					targetPng.data[targetIdx+2] = color.b;
-					targetPng.data[targetIdx+3] = color.a;
-				}
-			}
-		}
-	}
-
-	return PNG.sync.write(targetPng);
-}
-
-//when the add_emoji_confirm button is clicked
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isButton()) return;
 	if (interaction.customId === 'add_emoji_confirm') 
@@ -217,13 +131,13 @@ async function confirmAddEmoji(interaction) {
 
 		//checks
 		await updateEmojiArchiveToLatest();
-		await checkIfUserCanAfford(interaction.user.id);
+		await checkIfUserCanAfford(interaction.user.id, PRICE);
 		await checkIfEmojiIsInArchive(emojiPath);
-		await checkIfEmojiIsAlreadyInServer(interaction.guild, emojiName);
+		await checkIfEmojiExistsOnServer(interaction.guild, emojiName);
 		await checkIfServerHasFreeEmojiSlots(interaction.guild);
 
 		//make it happen
-		await takeUsersMoney(interaction.user.id);
+		await takeUsersMoney(interaction.user.id, PRICE);
 		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
 		await interaction.reply({content: "The emoji has been successfully added! \n\n"+emojiTag, ephemeral: true});
@@ -235,26 +149,3 @@ async function confirmAddEmoji(interaction) {
 	}
 }
 
-async function addEmojiToServer (interaction, emojiPath, emojiName) {
-	try {
-		const emojiImageScaled = await scalePng(emojiPath);
-		const emoji = await interaction.guild.emojis.create({ attachment: emojiImageScaled, name: emojiName });
-		return emoji.toString();
-	} catch (err) {
-		console.error('Failed to add emoji to server',err);
-		throw new Error('Failed to add emoji to discord server');
-	}
-}
-
-const EMOJI_SLOTS_PER_TIER = [50,100,150,250];
-
-async function checkIfServerHasFreeEmojiSlots (guild) {
-	const premiumTier = guild.premiumTier;
-	const totalEmojiSlots = EMOJI_SLOTS_PER_TIER[premiumTier];
-	const usedEmojiSlots = (await guild.emojis.fetch()).size;
-	const freeEmojiSlots = totalEmojiSlots - usedEmojiSlots;
-	console.log('server has',freeEmojiSlots,'free emoji slots', {premiumTier, totalEmojiSlots, usedEmojiSlots});
-
-	if (freeEmojiSlots > 0) return;
-	throw new Error('The server currently has no free emoji slots.');
-}
