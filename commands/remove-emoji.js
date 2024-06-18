@@ -64,6 +64,7 @@ export const execute = async (interaction) => {
 	await interaction.reply({
 		embeds: [embed],
 		components: [confirmationActionRow],
+		ephemeral: true
 	});
 }
 
@@ -73,7 +74,7 @@ client.on('interactionCreate', async interaction => {
 	if (interaction.customId === 'remove_emoji_confirm') 
 		confirmRemoveEmoji(interaction);
 	else if (interaction.customId === 'remove_emoji_cancel')
-		interaction.deleteReply();
+		interaction.update({content: 'Remove emoji request cancelled.', embeds: [], components: [], attachments: []});
 });
 
 async function confirmRemoveEmoji(interaction) {
@@ -89,15 +90,15 @@ async function confirmRemoveEmoji(interaction) {
 		//make it happen
 		await takeUsersMoney(interaction.user.id, PRICE);
 		await removeEmojiFromServer(interaction, emojiName);
+		
+		interaction.update({content: "The `:"+emojiName+":` emoji has been successfully removed from the server. You monster.", embeds: [], components: [], attachments: []});
 
-		await interaction.reply({content: "The `:"+emojiName+":` emoji has been successfully removed from the server. You monster.", ephemeral: true});
-	
 		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
 		await announcementChannel.send({content: '💀 '+interaction.user.toString()+' has killed the `:'+emojiName+':` emoji.'});
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
-		await interaction.reply({content: "Failed to remove emoji. " + err.message, ephemeral: true});
+		await interaction.update({content: "Failed to remove emoji. " + err.message, embeds: [], components: [], attachments: []});
 		return;
 	}
 }

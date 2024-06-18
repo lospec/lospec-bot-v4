@@ -98,6 +98,7 @@ export const execute = async (interaction) => {
 		files: [new AttachmentBuilder(emojiImageScaled, {name: 'emoji.png'})],
 		embeds: [embed],
 		components: [confirmationActionRow],
+		ephemeral: true
 	});
 };
 
@@ -120,8 +121,8 @@ client.on('interactionCreate', async interaction => {
 	if (!interaction.isButton()) return;
 	if (interaction.customId === 'add_emoji_confirm') 
 		confirmAddEmoji(interaction);
-	else if (interaction.customId === 'cancel')
-		interaction.deleteReply();
+	else if (interaction.customId === 'cancel') 
+		interaction.update({content: 'Add emoji request cancelled.', embeds: [], components: [], attachments: []});
 });
 
 async function confirmAddEmoji(interaction) {
@@ -141,15 +142,15 @@ async function confirmAddEmoji(interaction) {
 		await takeUsersMoney(interaction.user.id, PRICE);
 		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
-		await interaction.reply({content: "The emoji has been successfully added! \n\n"+emojiTag, ephemeral: true});
-		
+		await interaction.update({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully added! ', embeds: [], components: [], attachments: []});
+
 		//send announcement to emoji changes channel
 		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
 		await announcementChannel.send({content: '🎉 '+interaction.user.toString()+' has added the '+emojiTag+' `:'+emojiName+':` emoji to the server!'});
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
-		await interaction.reply({content: "Failed to add emoji. " + err.message, ephemeral: true});
+		await interaction.update({content: "Failed to add emoji. " + err.message, embeds: [], components: [], attachments: []});
 		return;
 	}
 }
