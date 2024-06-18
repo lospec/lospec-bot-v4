@@ -38,6 +38,10 @@ export async function addEmojiToServer (interaction, emojiPath, emojiName) {
 	}
 }
 
+export async function checkIfEmojiIsRemovable (emojiName) {
+	if (emojiName.match(/[A-Z]/)) throw new Error('This is a protected emoji and it cannot be removed.');
+	if (emojiName == 'birb') throw new Error('You are not powerful enough to remove :birb:.');
+}
 
 export async function removeEmojiFromServer(interaction, emojiName) {
 	try {

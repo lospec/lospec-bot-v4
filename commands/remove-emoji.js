@@ -1,7 +1,7 @@
 import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
 import client from '../client.js';
 import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
-import { getEmojiOnServer, removeEmojiFromServer } from '../util/emoji.js';
+import { getEmojiOnServer, removeEmojiFromServer, checkIfEmojiIsRemovable } from '../util/emoji.js';
 import {CONFIG} from '../data.js';
 
 const PRICE = 50;
@@ -45,6 +45,7 @@ export const execute = async (interaction) => {
 
 	try {
 		await checkIfUserCanAfford(interaction.user.id, PRICE);
+		await checkIfEmojiIsRemovable(emojiName);
 		emoji = await getEmojiOnServer(interaction.guild, emojiName);
 	}
 	catch (err) {
@@ -83,6 +84,7 @@ async function confirmRemoveEmoji(interaction) {
 		//checks
 		await checkIfUserCanAfford(interaction.user.id, PRICE);
 		await getEmojiOnServer(interaction.guild, emojiName);
+		await checkIfEmojiIsRemovable(emojiName);
 
 		//make it happen
 		await takeUsersMoney(interaction.user.id, PRICE);
