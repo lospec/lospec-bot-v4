@@ -4,7 +4,9 @@ import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.j
 import { getEmojiOnServer, removeEmojiFromServer, checkIfEmojiIsRemovable } from '../util/emoji.js';
 import {CONFIG} from '../data.js';
 
-const PRICE = 50;
+await CONFIG.assert('removeEmojiPrice');
+
+const PRICE = CONFIG.get('removeEmojiPrice');
 
 export const config = {
 	name: 'remove-emoji', 

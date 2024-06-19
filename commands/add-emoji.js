@@ -8,10 +8,11 @@ import { scalePng } from '../util/scale-png.js';
 import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer } from '../util/emoji.js';
 import {CONFIG} from '../data.js';
 await CONFIG.assert('emojiChangesAnnouncementsChannelId');
+await CONFIG.assert('addEmojiPrice');
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
-const PRICE = 50;
+const PRICE = CONFIG.get('addEmojiPrice');
 
 try {
 	await fsp.access(OUTPUT_PATH);
