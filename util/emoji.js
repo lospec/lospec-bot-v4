@@ -42,6 +42,7 @@ export async function checkIfEmojiIsRemovable (emojiName) {
 	if (emojiName.match(/[A-Z]/)) throw new Error('This is a protected emoji and it cannot be removed.');
 	if (emojiName == 'pikzel') throw new Error('This would destroy the economy.');
 	if (emojiName == 'birb') throw new Error('You are not powerful enough to remove :birb:.');
+	if (emojiName == 'love') throw new Error('Why would you want to kill love? What is wrong with you?');
 }
 
 export async function removeEmojiFromServer(interaction, emojiName) {
