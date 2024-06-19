@@ -18,21 +18,22 @@ try {
 	await fsp.access(OUTPUT_PATH);
 	console.log('folder '+OUTPUT_PATH+' exists');
 	await updateEmojiArchiveToLatest();
-	console.log('updated emoji archive');
 } 
 catch (err) {
+	console.log(' > folder '+OUTPUT_PATH+' does not exist, creating...');
 	await fsp.mkdir(OUTPUT_PATH);
-	console.log('created folder '+OUTPUT_PATH);
+	console.log(' > created folder '+OUTPUT_PATH);
 	const git = simpleGit({baseDir: OUTPUT_PATH});
 	try {
+		console.log(' > fetching git repo '+EMOJI_ARCHIVE_URL+'...');
 		await git.init();
 		await git.addRemote('origin', EMOJI_ARCHIVE_URL);
 		await git.fetch('origin','main');
 		await git.checkout('main');
 
-		console.log('fetched emoji archive');
+		console.log(' > fetched emoji archive');
 	} catch (err) {
-		console.error('Error initializing git repo',err);
+		console.error(' > Error initializing git repo',err);
 	}
 }
 
@@ -104,9 +105,16 @@ export const execute = async (interaction) => {
 };
 
 async function updateEmojiArchiveToLatest () {
+	console.log(' > updating emoji archive to latest...');
 	const git = simpleGit({baseDir: OUTPUT_PATH});
-	await git.fetch('origin','main');
-	await git.checkout('main');
+	const status = await git.status();
+	if (status.behind > 0) {
+		console.log(' > emoji archive is behind by '+status.behind+' commits, pulling latest changes');
+		await git.pull();
+		console.log(' > done updating emoji archive');
+	}
+	else
+		console.log(' > emoji archive is already up to date');
 }
 
 async function checkIfEmojiIsInArchive (emojiPath) {
