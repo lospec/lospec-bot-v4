@@ -17,7 +17,7 @@ export async function checkIfUserCanAfford (userId, price) {
 		throw new Error('Failed to check user balance');
 	}
 
-	if (balance > price) return;
+	if (balance >= price) return;
 	throw new Error('You do not have enough P to purchase this emoji. You need '+price+'P, but you only have '+balance+'P.');
 }
 
@@ -27,7 +27,7 @@ export async function takeUsersMoney (userId, price) {
 		const data = await response.json();
 		console.log('got user balance:',data);
 		let balance = data;
-		if (balance < price) 
+		if (balance <= price) 
 			throw new Error('You do not have enough P to purchase this emoji. You need '+price+'P, but you only have '+balance+'P.');
 
 
