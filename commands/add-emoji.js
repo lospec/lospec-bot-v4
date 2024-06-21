@@ -107,6 +107,7 @@ export const execute = async (interaction) => {
 async function updateEmojiArchiveToLatest () {
 	console.log(' > updating emoji archive to latest...');
 	const git = simpleGit({baseDir: OUTPUT_PATH});
+	await git.fetch('origin','main');
 	const status = await git.status();
 	if (status.behind > 0) {
 		console.log(' > emoji archive is behind by '+status.behind+' commits, pulling latest changes');
