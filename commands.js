@@ -35,7 +35,7 @@ client.once('ready', async c => {
 		console.log('Joined server:', guild.name);
 		rest.put(DiscordRestRoutes.applicationGuildCommands(client.user.id,guild.id), {body: commandsList})
 			.then(e => console.log('Added commands to "'+guild.name+'" guild'))
-			.catch(err=> console.error('Failed to add commands to "'+guild.name+'" guild'))
+			.catch(err=> console.error('Failed to add commands to "'+guild.name+'" guild'+ err));
 	});
 });
 
