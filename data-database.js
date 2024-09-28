@@ -29,11 +29,14 @@ class Data {
 	}
 
 	get(key) {
+		console.log('Getting', this.slug, key);
 		return this.store[key];
 	}
 
 	set(key, value) {
+		console.log('Setting', this.slug, key, 'to', value);
 		this.store[key] = value;
+		collection.updateOne({name: this.slug}, {$set: {[key]: value}});
 	}
 
 	async assert(key, required = true) {
