@@ -1,14 +1,10 @@
 import { ApplicationCommandType, ActionRowBuilder, ModalBuilder, TextInputStyle, TextInputBuilder  } from 'discord.js';
-import client from '../client.js';
 import yonify from '../util/yonify.js';
-import {YON_DATA,YON_CONFIG} from '../data.js';
-
 
 export const config = {
 	name: 'yon-describe',
 	type: ApplicationCommandType.Message
 };
-
 
 export const execute = async (interaction) => {
 	const modal = new ModalBuilder()
