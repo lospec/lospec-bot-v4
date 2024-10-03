@@ -28,5 +28,5 @@ export const execute = async (interaction) => {
 		description: '```'+yonify(user.name+' attempts to '+input)+'```' + '\n' + ':game_die: '+rollScore
 	}]});
 
-	await interaction.reply({content: 'Your message has been sent.', ephemeral: true});
+	await interaction.reply({content: '```"'+yonify('your action has been attempted')+'"```', ephemeral: true});
 }
