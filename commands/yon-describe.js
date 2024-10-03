@@ -20,6 +20,11 @@ export const execute = async (interaction) => {
 		.setLabel('How much damage was done?')
 		.setStyle(TextInputStyle.Short)
 		.setValue('0');
+	const healthHealedInput = new TextInputBuilder()
+		.setCustomId('health-healed')
+		.setLabel('How much health was healed?')
+		.setStyle(TextInputStyle.Short)
+		.setValue('0');
 	const itemsGainedInput = new TextInputBuilder()
 		.setCustomId('items-gained')
 		.setLabel('What items were gained?')
@@ -28,8 +33,9 @@ export const execute = async (interaction) => {
 		.setPlaceholder('comma separated list');
 	const firstActionRow = new ActionRowBuilder().addComponents(actionResponseInput);
 	const firstActionRow2 = new ActionRowBuilder().addComponents(damageDoneInput);
-	const firstActionRow3 = new ActionRowBuilder().addComponents(itemsGainedInput);
-	modal.addComponents(firstActionRow, firstActionRow2, firstActionRow3);
+	const firstActionRow3 = new ActionRowBuilder().addComponents(healthHealedInput);
+	const firstActionRow4 = new ActionRowBuilder().addComponents(itemsGainedInput);
+	modal.addComponents(firstActionRow, firstActionRow2, firstActionRow3, firstActionRow4);
 
 	try {
 		await interaction.showModal(modal);
@@ -51,12 +57,16 @@ export const execute = async (interaction) => {
 async function respondWithDescription (interaction, ModalSubmitInteraction) {
 	let actionResponse = ModalSubmitInteraction.fields.getTextInputValue('action-response');
 	let damageDone = parseInt(ModalSubmitInteraction.fields.getTextInputValue('damage-done'));
+	let healthHealed = parseInt(ModalSubmitInteraction.fields.getTextInputValue('health-healed'));
 	let itemsGained = ModalSubmitInteraction.fields.getTextInputValue('items-gained');
 
 	let output = "```" + yonify(actionResponse) + "```";
 
 	if (!isNaN(damageDone) && damageDone > 0) 
 		output += '\n :crossed_swords:  ' + damageDone;
+
+	if (!isNaN(healthHealed) && healthHealed > 0)
+		output += '\n :two_hearts:  ' + healthHealed;
 
 	let itemsGainedArray = itemsGained.replace(/\s/g, '').split(',').filter(Boolean);
 	if (itemsGainedArray.length > 0) 
