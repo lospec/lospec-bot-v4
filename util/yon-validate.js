@@ -6,8 +6,9 @@ import client from '../client.js';
 export default async function yonValidate(interaction) {
 	let dungeonMasterId = YON_CONFIG.get('dungeon-master-id');
 	let dungeonChannelId = YON_CONFIG.get('dungeon-channel-id');
+	let activePlayerRole = YON_CONFIG.get('active-player-role');
 
-	if (!dungeonMasterId || !dungeonChannelId) {
+	if (!dungeonMasterId || !dungeonChannelId || !activePlayerRole) {
 		console.error('Yon Dungeon is not properly configured: ', {dungeonMasterId, dungeonChannelId});
 		throw new Error('Yon Dungeon is not currently open.');
 	}

@@ -45,6 +45,11 @@ export const execute = async (interaction) => {
 	if (characterAvatar) characterAvatar = characterAvatar.url;
 	else characterAvatar = interaction.user.displayAvatarURL({dynamic: true, size: 128});
 
+	//give user role
+	let member = await interaction.guild.members.fetch(interaction.user.id);
+	let role = await interaction.guild.roles.cache.find(role => role.id === YON_CONFIG.get('active-player-role'));
+	await member.roles.add(role);
+
 	//success
 	await YON_DATA.set(interaction.user.id, {name: characterName, avatar: characterAvatar});
 	await interaction.reply({content: 'You have entered the Yon Dungeon as '+characterName, ephemeral: true});
