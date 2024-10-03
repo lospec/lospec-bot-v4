@@ -51,8 +51,12 @@ export const execute = async (interaction) => {
 	await member.roles.add(role);
 
 	//success
-	await YON_DATA.set(interaction.user.id, {name: characterName, avatar: characterAvatar});
-	await interaction.reply({content: 'You have entered the Yon Dungeon as '+characterName, ephemeral: true});
+	let channelTag = '<#'+dungeonChannelId+'>';
+	await YON_DATA.set(interaction.user.id, {
+		name: characterName, 
+		avatar: characterAvatar,
+	});
+	await interaction.reply({content: 'You have entered Yon Dungeon as '+characterName+'. Head to '+channelTag+' to begin your journey.', ephemeral: true});
 
 	//send join message in the dungeon channel
 	let dungeonChannel = await client.channels.fetch(dungeonChannelId);
