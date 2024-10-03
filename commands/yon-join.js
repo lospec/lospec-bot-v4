@@ -1,15 +1,9 @@
 import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
 import client from '../client.js';
-
-//import data
-import {Data} from '../data.js';
-
-const YON_DATA = new Data('yon');
-
-const YON_CONFIG = new Data('yon-config');
+import {YON_DATA,YON_CONFIG} from '../data.js';
 
 export const config = {
-	name: 'join-yon-dungeon', 
+	name: 'yon-join', 
 	description: 'Create a character and enter Yon Dungeon',
 	type: ApplicationCommandType.ChatInput,
 	options: [
@@ -19,12 +13,12 @@ export const config = {
 			type: ApplicationCommandOptionType.String,
 			required: true,
 		},
-		{
-			name: 'character-avatar',
-			description: 'An image to use as your character\'s avatar (optional, defaults to your discord avatar)',
-			type: ApplicationCommandOptionType.Attachment,
-			required: false,
-		}
+		// {
+		// 	name: 'character-avatar',
+		// 	description: 'An image to use as your character\'s avatar (optional, defaults to your discord avatar)',
+		// 	type: ApplicationCommandOptionType.Attachment,
+		// 	required: false,
+		// }
 	]
 };
 
@@ -44,6 +38,9 @@ export const execute = async (interaction) => {
 
 	//get input
 	let characterName = interaction.options.getString('character-name');
+		if (!characterName || characterName.length < 2) return interaction.reply({content: 'You must provide a character name.', ephemeral: true});
+		if (characterName.length > 32) return interaction.reply({content: 'Character names must be 32 characters or less.', ephemeral: true});
+		characterName = characterName.toUpperCase();
 	let characterAvatar = interaction.options.getAttachment('character-avatar');
 	if (characterAvatar) characterAvatar = characterAvatar.url;
 	else characterAvatar = interaction.user.displayAvatarURL({dynamic: true, size: 128});
@@ -55,5 +52,6 @@ export const execute = async (interaction) => {
 	//send join message in the dungeon channel
 	let dungeonChannel = await client.channels.fetch(dungeonChannelId);
 	if (!dungeonChannel) return console.error('Failed to fetch dungeon channel:', dungeonChannelId);
-	await dungeonChannel.send({content: characterName+' entered Yon Dungeon.'});
+	await dungeonChannel.send({embeds: [{description: '```'+characterName+' AWOKE IN YON DUNGEON```'}]});
+
 }
