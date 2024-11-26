@@ -114,7 +114,7 @@ async function confirmUpdateEmoji(interaction) {
 
         //send announcement to emoji changes channel
         const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
-        await announcementChannel.send({content: '🎉 '+interaction.user.toString()+' has updated the '+emojiTag+' `:'+emojiName+':` emoji on the server!'});
+        await announcementChannel.send({content: '🌟 '+interaction.user.toString()+' has updated the '+emojiTag+' `:'+emojiName+':` emoji on the server!'});
     }
     catch (err) {
         console.log('update emoji request failed:',err);
