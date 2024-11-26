@@ -3,3 +3,4 @@ node_modules
 *.crt
 _cache
 _emoji-archive
+.vscode
