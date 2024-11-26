@@ -5,7 +5,7 @@ import path from 'path';
 import client from '../client.js';
 import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
 import { scalePng } from '../util/scale-png.js';
-import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer } from '../util/emoji.js';
+import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive } from '../util/emoji.js';
 import {CONFIG} from '../data.js';
 await CONFIG.assert('emojiChangesAnnouncementsChannelId');
 await CONFIG.assert('addEmojiPrice');
@@ -103,29 +103,6 @@ export const execute = async (interaction) => {
 		ephemeral: true
 	});
 };
-
-async function updateEmojiArchiveToLatest () {
-	console.log(' > updating emoji archive to latest...');
-	const git = simpleGit({baseDir: OUTPUT_PATH});
-	await git.fetch('origin','main');
-	const status = await git.status();
-	if (status.behind > 0) {
-		console.log(' > emoji archive is behind by '+status.behind+' commits, pulling latest changes');
-		await git.pull();
-		console.log(' > done updating emoji archive');
-	}
-	else
-		console.log(' > emoji archive is already up to date');
-}
-
-async function checkIfEmojiIsInArchive (emojiPath) {
-	try {
-		await fsp.access(emojiPath);
-	}
-	catch (err) {
-		throw new Error('Emoji not found in the Lospec Emoji Archive. Please make sure the emoji has been added to the archive before trying to add it.');
-	}
-}
 
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isButton()) return;

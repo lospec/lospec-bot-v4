@@ -1,4 +1,8 @@
 import { scalePng } from '../util/scale-png.js';
+import { simpleGit} from 'simple-git';
+import fsp from 'fs/promises';
+
+const OUTPUT_PATH = '_emoji-archive';
 
 const EMOJI_SLOTS_PER_TIER = [50,100,150,250];
 
@@ -63,3 +67,26 @@ export async function removeEmojiFromServer(interaction, emojiName) {
 	}
 }
 
+export async function updateEmojiArchiveToLatest () {
+    console.log(' > updating emoji archive to latest...');
+    const git = simpleGit({baseDir: OUTPUT_PATH});
+    await git.fetch('origin','main');
+    const status = await git.status();
+    if (status.behind > 0) {
+        console.log(' > emoji archive is behind by '+status.behind+' commits, pulling latest changes');
+        await git.pull();
+        console.log(' > done updating emoji archive');
+    }
+    else
+        console.log(' > emoji archive is already up to date');
+}
+
+export async function checkIfEmojiIsInArchive (emojiPath) {
+    try {
+        await fsp.access(emojiPath);
+    }
+    catch (err) {
+		console.error(err);
+        throw new Error('Emoji not found in the Lospec Emoji Archive. Please make sure the emoji has been added to the archive before trying to update it.');
+    }
+}
