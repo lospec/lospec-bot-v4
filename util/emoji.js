@@ -8,6 +8,12 @@ export async function checkIfEmojiExistsOnServer (guild, emojiName) {
 		throw new Error('Emoji already exists in server.');
 }
 
+export async function ensureEmojiExistsOnServer (guild, emojiName) {
+	const existingEmoji = (await guild.emojis.fetch()).find(e => e.name === emojiName);
+	if (!existingEmoji) 
+		throw new Error('The emoji does not yet exist on this server.');
+}
+
 export async function getEmojiOnServer (guild, emojiName) {
 	const emoji = (await guild.emojis.fetch()).find(e => e.name === emojiName);
 	if (!emoji) throw new Error('The emoji `:'+emojiName+':` does not exist on this server.');
