@@ -15,8 +15,15 @@ export const filter = async (reaction, user) => {
 }
 
 export const execute = async (reaction) => {
-	console.log('pinning message', reaction.message.id, 'in thread', reaction.message.channel.id, 'by user', reaction.message.author.id);
+	console.log('pinning message', reaction.message.id, 'in thread', reaction.message.channel.id);
 
 	// pin the message
 	await reaction.message.pin({ reason: 'Pinned by user in their own thread.' });
+}
+
+export const executeRemove = async (reaction) => {
+	console.log('unpinning message', reaction.message.id, 'in thread', reaction.message.channel.id);
+
+	// unpin the message
+	await reaction.message.unpin({ reason: 'Unpinned by user in their own thread.' });
 }
