@@ -50,4 +50,29 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+client.on('messageReactionRemove', async (reaction, user) => {
+    console.log('reaction removed:', reaction.emoji.name, 'by', user.tag);
+
+    // Ignore bot reactions
+    if (user.bot) return;
+
+    // Loop through reactions and check if any filter matches
+    for (let reactionName in REACTIONS) {
+
+		if (!REACTIONS[reactionName].executeRemove) continue;
+
+        if (await REACTIONS[reactionName].filter(reaction, user)) {
+            console.log('running reaction "' + reactionName + '"');
+            try {
+                await REACTIONS[reactionName].executeRemove(reaction, user);
+            }
+            catch (err) {
+                console.error(reactionName, 'encountered an error:', err);
+            }
+        } else {
+			console.log('reactionRemove "' + reactionName + '" filter failed');
+		}
+    }
+});
+
 export default { REACTIONS };
