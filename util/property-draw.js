@@ -109,7 +109,7 @@ function drawHouseLarge(tilesPng, width, height) {
 		let tileIdx;
 		if (x === 0) tileIdx = 21; // 16+5
 		else if (x === width-1) tileIdx = 24; // 19+5
-		else if (x === Math.floor(width/2)) tileIdx = 27; // 22+5
+		else if (x === Math.floor(width/2)) tileIdx = 0; // 22+5
 		else tileIdx = (x % 2 === 0 ? 23 : 22); // 18+5 : 17+5
 		copyTile(tilesPng, out, tileIdx, x, height);
 	}
@@ -195,8 +195,8 @@ export function drawSinglePropertyImage(tilesPng, width, height) {
 }
 
 function drawGround(tilesPng, outPng) {
-	const groundTileX = 0;
-	const groundTileY = 0;
+	const groundTileX = 4 * TILE_SIZE;
+	const groundTileY = 0 * TILE_SIZE;
 
 	for (let y = 0; y < TILE_SIZE; y++) {
 		for (let x = 0; x < outPng.width; x++) {
