@@ -41,7 +41,7 @@ export const config = {
 		},
 		{
 			name: 'sell',
-			description: 'Sell your property and get a refund for materials and land fees',
+			description: 'Sell your property',
 			type: ApplicationCommandOptionType.Subcommand,
 		}
 	]
