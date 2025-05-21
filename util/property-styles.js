@@ -23,7 +23,7 @@ export const PROPERTY_STYLES = [
 // replace ['ff80ff', 'ff00ff', '800080']
 
 export const PROPERTY_ACCENTS = {
-	'Brown': ['ffffff', 'b6703d', '8a251a'],
+	'Brown': ['ffae00', 'b6703d', '8a251a'],
 	'Red': ['ffae00', 'ff5826', 'be0000'],
 	'Blue': ['ffffff', '00a7df', '1667c4'],
 	'Green': ['ffffff', '96c615', '098f26'],
