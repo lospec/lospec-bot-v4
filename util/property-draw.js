@@ -76,7 +76,7 @@ function drawHouse1Tall(tilesPng, width, tileOffset = 0) {
 
 function drawHouse1Wide(tilesPng, height, tileOffset = 0) {
 	const out = new PNG({width: TILE_SIZE, height: height * TILE_SIZE, fill: true});
-	copyTile(tilesPng, out, 5 + tileOffset, 0, 0); // top
+	copyTile(tilesPng, out, 10 + tileOffset, 0, 0); // top
 	for (let y = 1; y < height-1; y++) {
 		copyTile(tilesPng, out, 15 + tileOffset, 0, y); // middle
 	}
