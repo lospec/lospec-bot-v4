@@ -185,8 +185,25 @@ export function drawSinglePropertyImage(tilesPng, width, height) {
 			}
 		}
 	}
+
+	// Draw the ground, using tile 0
+	const groundTileIdx = 0;
+	const groundTileX = 0;
+	const groundTileY = 0;
+
+	for (let y = 0; y < TILE_SIZE; y++) {
+		for (let x = 0; x < outWidth; x++) {
+			const srcIdx = ((groundTileY + y) * tilesPng.width + (groundTileX + x % TILE_SIZE)) << 2;
+			const dstIdx = ((y + outHeight - marginBottom) * outPng.width + (x + xOffset)) << 2;
+			for (let c = 0; c < 4; c++) {
+				outPng.data[dstIdx + c] = tilesPng.data[srcIdx + c];
+			}
+		}
+	}
+
 	return outPng;
 }
+
 
 function fillPng(png, r, g, b) {
 	for (let y = 0; y < png.height; y++) {
