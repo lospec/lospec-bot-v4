@@ -30,13 +30,13 @@ export default async function confirmPropertyBuy(interaction) {
 		});
 		return;
 	}
-	// Set default accent to brown
-	properties[userId] = {width: 1, height: 1, accent: 'brown'};
+
+	properties[userId] = {width: 1, height: 1, accent: 'Brown'};
 	PROPERTY_DATA.set('properties', properties);
 
 	// Draw and send the updated images
 	const imgBuffer = await drawAllPropertiesImage(properties);
-	const singleBuffer = await drawSinglePropertyImageBuffer(1, 1, 'Cabin', 'brown');
+	const singleBuffer = await drawSinglePropertyImageBuffer(1, 1, 'Cabin', 'Brown');
 	const channel = await client.channels.fetch(PROPERTY_CONFIG.get('propertyUpdatesChannelId'));
 	await channel.send({
 		content: `<@${userId}> purchased a property!`,
