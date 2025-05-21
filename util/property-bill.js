@@ -106,8 +106,8 @@ export function getSellPropertyBill(userProperty) {
         landRefund += Math.round(Math.pow(base, w));
     }
     const billLines = [];
-    if (materialRefund > 0) billLines.push(`MATERIALS REFUND (${styleObj.name}) x ${tileCount} = $${materialRefund}`);
-    if (landRefund > 0) billLines.push(`LAND FEE REFUND FOR WIDTH EXPANSIONS = $${landRefund}`);
+    if (materialRefund > 0) billLines.push(`MATERIALS (${styleObj.name}) x ${tileCount} = $${materialRefund}`);
+    if (landRefund > 0) billLines.push(`LAND = $${landRefund}`);
     const total = materialRefund + landRefund;
     if (total === 0) billLines.push('No refund (Cabin style, 1x1)');
     return new PropertyBill('sell', total, billLines);
