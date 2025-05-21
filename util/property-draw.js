@@ -47,7 +47,7 @@ function getStyleIndex(styleName) {
 
 function drawHouse1x1(tilesPng, tileOffset = 0) {
 	const out = new PNG({width: TILE_SIZE, height: TILE_SIZE, fill: true});
-	copyTile(tilesPng, out, 0 + tileOffset, 0, 0);
+	copyTile(tilesPng, out, 5 + tileOffset, 0, 0);
 	return out;
 }
 
