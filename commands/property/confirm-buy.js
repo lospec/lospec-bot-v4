@@ -52,7 +52,6 @@ export default async function confirmPropertyBuy(interaction) {
 
 client.on('interactionCreate', async interaction => {
 	if (interaction.isButton() && interaction.customId === 'property_confirm_buy') {
-		const handler = exports.default;
-		if (handler) return handler(interaction);
+		return await confirmPropertyBuy(interaction);
 	}
 });
