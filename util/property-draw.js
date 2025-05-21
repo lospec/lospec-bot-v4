@@ -50,7 +50,7 @@ function drawHouse1Tall(tilesPng, width) {
 		let tileIdx;
 		if (x === 0) tileIdx = 1;
 		else if (x === width-1) tileIdx = 4;
-		else tileIdx = (x % 2 === 0 ? 2 : 3);
+		else tileIdx = (x % 4 === 2 ? 2 : 3);
 		copyTile(tilesPng, out, tileIdx, x, 0);
 	}
 	// Original row (now second row)
@@ -83,7 +83,7 @@ function drawHouseLarge(tilesPng, width, height) {
 		let tileIdx;
 		if (x === 0) tileIdx = 1;
 		else if (x === width-1) tileIdx = 4;
-		else tileIdx = (x % 2 === 0 ? 2 : 3);
+		else tileIdx = (x % 4 === 2 ? 2 : 3);
 		copyTile(tilesPng, out, tileIdx, x, 0);
 	}
 	// Top row (now second row)
@@ -158,7 +158,7 @@ export async function drawAllPropertiesImage(properties) {
 	}
 
 	drawGround(tilesPng, outPng);
-	
+
 	return PNG.sync.write(outPng);
 }
 
