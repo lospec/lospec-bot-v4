@@ -38,6 +38,11 @@ export const config = {
 			name: 'change-accent',
 			description: 'Change the accent color of your house',
 			type: ApplicationCommandOptionType.Subcommand,
+		},
+		{
+			name: 'sell',
+			description: 'Sell your property and get a refund for materials and land fees',
+			type: ApplicationCommandOptionType.Subcommand,
 		}
 	]
 };
@@ -54,5 +59,6 @@ export default async function(interaction) {
 		case 'view': return (await import('./property/view.js')).default(interaction);
 		case 'change-style': return (await import('./property/change-style.js')).default(interaction);
 		case 'change-accent': return changeAccent(interaction);
+		case 'sell': return (await import('./property/sell.js')).default(interaction);
 	}
 }

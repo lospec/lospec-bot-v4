@@ -90,3 +90,26 @@ export function getChangeAccentBill(userProperty, newAccent) {
     return new PropertyBill('accent', total, billLines);
 }
 
+
+export function getSellPropertyBill(userProperty) {
+    const width = userProperty.width || 1;
+    const height = userProperty.height || 1;
+    const style = userProperty.style || 'Cabin';
+    const styleObj = PROPERTY_STYLES.find(s => s.name.toLowerCase() === style.toLowerCase()) || PROPERTY_STYLES[0];
+    const tileCount = width * height;
+    // Refund material cost for each tile
+    const materialRefund = styleObj.cost * tileCount;
+    // Refund land fee for each width expansion (width > 1)
+    let landRefund = 0;
+    const base = 1.3;
+    for (let w = 2; w <= width; w++) {
+        landRefund += Math.round(Math.pow(base, w));
+    }
+    const billLines = [];
+    if (materialRefund > 0) billLines.push(`MATERIALS REFUND (${styleObj.name}) x ${tileCount} = $${materialRefund}`);
+    if (landRefund > 0) billLines.push(`LAND FEE REFUND FOR WIDTH EXPANSIONS = $${landRefund}`);
+    const total = materialRefund + landRefund;
+    if (total === 0) billLines.push('No refund (Cabin style, 1x1)');
+    return new PropertyBill('sell', total, billLines);
+}
+
