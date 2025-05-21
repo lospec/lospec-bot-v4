@@ -24,7 +24,7 @@ export const config = {
 			type: ApplicationCommandOptionType.Subcommand,
 		},
 		{
-			name: 'property-view',
+			name: 'view',
 			description: 'View your property',
 			type: ApplicationCommandOptionType.Subcommand,
 		}

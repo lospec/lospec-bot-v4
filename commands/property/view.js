@@ -3,7 +3,7 @@ import { loadTilesPng, drawSinglePropertyImage } from '../../util/property-draw.
 import { AttachmentBuilder } from 'discord.js';
 import { PNG } from 'pngjs';
 
-export default async function propertyView(interaction) {
+export default async function view(interaction) {
     await PROPERTY_DATA.assert('properties', false);
     const properties = PROPERTY_DATA.get('properties') || {};
     const userId = interaction.user.id;
