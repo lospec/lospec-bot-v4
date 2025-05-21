@@ -156,6 +156,9 @@ export async function drawAllPropertiesImage(properties) {
 		}
 		xOffset += house.width + marginBetween;
 	}
+
+	drawGround(tilesPng, outPng);
+	
 	return PNG.sync.write(outPng);
 }
 
@@ -186,22 +189,24 @@ export function drawSinglePropertyImage(tilesPng, width, height) {
 		}
 	}
 
-	// Draw the ground, using tile 0
-	const groundTileIdx = 0;
+	drawGround(tilesPng, outPng);
+
+	return outPng;
+}
+
+function drawGround(tilesPng, outPng) {
 	const groundTileX = 0;
 	const groundTileY = 0;
 
 	for (let y = 0; y < TILE_SIZE; y++) {
-		for (let x = 0; x < outWidth; x++) {
+		for (let x = 0; x < outPng.width; x++) {
 			const srcIdx = ((groundTileY + y) * tilesPng.width + (groundTileX + x % TILE_SIZE)) << 2;
-			const dstIdx = ((y + outHeight - marginBottom) * outPng.width + (x + xOffset)) << 2;
+			const dstIdx = ((y + outPng.height - TILE_SIZE) * outPng.width + x) << 2;
 			for (let c = 0; c < 4; c++) {
 				outPng.data[dstIdx + c] = tilesPng.data[srcIdx + c];
 			}
 		}
 	}
-
-	return outPng;
 }
 
 
