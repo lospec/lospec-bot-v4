@@ -159,27 +159,29 @@ export async function drawAllPropertiesImage(properties) {
 	return PNG.sync.write(outPng);
 }
 
-export async function drawSinglePropertyImage(tilesPng, width, height) {
+export function drawSinglePropertyImage(tilesPng, width, height) {
+	// Margin and background similar to drawAllPropertiesImage
 	const marginSide = 16;
 	const marginTop = 32;
 	const marginBottom = 16;
-	// Ensure width and height are positive integers
-	width = Math.max(1, Math.floor(Number(width)));
-	height = Math.max(1, Math.floor(Number(height)));
-	const imgWidth = width * TILE_SIZE + marginSide * 2;
-	const imgHeight = height * TILE_SIZE + marginTop + marginBottom;
-	const outPng = new PNG({width: imgWidth, height: imgHeight});
-	fillPng(outPng, 0x37, 0x9d, 0xd7);
-	// Draw house
-	const housePng = drawHouse(tilesPng, width, height);
-	const xOffset = marginSide;
-	const yOffset = marginTop;
-	for (let y = 0; y < housePng.height; y++) {
-		for (let x = 0; x < housePng.width; x++) {
-			const idx = (y * housePng.width + x) << 2;
+	const marginLeft = marginSide;
+	const marginRight = marginSide;
+
+	const house = drawHouse(tilesPng, width, height);
+	const outWidth = house.width + marginLeft + marginRight;
+	const outHeight = house.height + marginTop + marginBottom;
+	const outPng = new PNG({width: outWidth, height: outHeight});
+	fillPng(outPng, 0x37, 0xa7, 0xdf);
+
+	// Center house horizontally, align to bottom (with margin)
+	const xOffset = marginLeft;
+	const yOffset = marginTop + (outHeight - marginTop - marginBottom - house.height);
+	for (let y = 0; y < house.height; y++) {
+		for (let x = 0; x < house.width; x++) {
+			const idx = (y * house.width + x) << 2;
 			const outIdx = ((y + yOffset) * outPng.width + (x + xOffset)) << 2;
 			for (let c = 0; c < 4; c++) {
-				outPng.data[outIdx + c] = housePng.data[idx + c];
+				outPng.data[outIdx + c] = house.data[idx + c];
 			}
 		}
 	}
