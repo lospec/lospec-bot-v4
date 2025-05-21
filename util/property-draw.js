@@ -1,6 +1,7 @@
 import { PNG } from 'pngjs';
 import fs from 'fs';
 import path from 'path';
+import { PROPERTY_STYLES } from './property-styles.js';
 
 const TILE_SIZE = 16;
 const TILES_W = 5;
@@ -24,26 +25,33 @@ export async function loadTilesPng() {
 	});
 }
 
-export function drawHouse(tilesPng, width, height) {
+export function drawHouse(tilesPng, width, height, styleName = 'Cabin') {
+	const styleIndex = getStyleIndex(styleName);
+	const tileOffset = styleIndex * 25; // 25 tiles per style
 	if (width === 1 && height === 1) {
-		return drawHouse1x1(tilesPng);
+		return drawHouse1x1(tilesPng, tileOffset);
 	}
 	if (height === 1) {
-		return drawHouse1Tall(tilesPng, width);
+		return drawHouse1Tall(tilesPng, width, tileOffset);
 	}
 	if (width === 1) {
-		return drawHouse1Wide(tilesPng, height);
+		return drawHouse1Wide(tilesPng, height, tileOffset);
 	}
-	return drawHouseLarge(tilesPng, width, height);
+	return drawHouseLarge(tilesPng, width, height, tileOffset);
 }
 
-function drawHouse1x1(tilesPng) {
+function getStyleIndex(styleName) {
+	const idx = PROPERTY_STYLES.findIndex(s => s.name.toLowerCase() === (styleName || 'Cabin').toLowerCase());
+	return idx >= 0 ? idx : 0;
+}
+
+function drawHouse1x1(tilesPng, tileOffset = 0) {
 	const out = new PNG({width: TILE_SIZE, height: TILE_SIZE, fill: true});
-	copyTile(tilesPng, out, 0, 0, 0);
+	copyTile(tilesPng, out, 0 + tileOffset, 0, 0);
 	return out;
 }
 
-function drawHouse1Tall(tilesPng, width) {
+function drawHouse1Tall(tilesPng, width, tileOffset = 0) {
 	const out = new PNG({width: width * TILE_SIZE, height: TILE_SIZE * 2, fill: true});
 	// Extra top row using first row of tiles
 	for (let x = 0; x < width; x++) {
@@ -51,7 +59,7 @@ function drawHouse1Tall(tilesPng, width) {
 		if (x === 0) tileIdx = 1;
 		else if (x === width-1) tileIdx = 4;
 		else tileIdx = (x % 4 === 2 ? 2 : 3);
-		copyTile(tilesPng, out, tileIdx, x, 0);
+		copyTile(tilesPng, out, tileIdx + tileOffset, x, 0);
 	}
 	// Original row (now second row)
 	for (let x = 0; x < width; x++) {
@@ -59,24 +67,24 @@ function drawHouse1Tall(tilesPng, width) {
 		if (x === 0) tileIdx = 6;
 		else if (x === width-1) tileIdx = 9;
 		else tileIdx = 8;
-		copyTile(tilesPng, out, tileIdx, x, 1);
+		copyTile(tilesPng, out, tileIdx + tileOffset, x, 1);
 	}
 	const doorX = Math.floor(width/2);
-	copyTile(tilesPng, out, 7, doorX, 1);
+	copyTile(tilesPng, out, 7 + tileOffset, doorX, 1);
 	return out;
 }
 
-function drawHouse1Wide(tilesPng, height) {
+function drawHouse1Wide(tilesPng, height, tileOffset = 0) {
 	const out = new PNG({width: TILE_SIZE, height: height * TILE_SIZE, fill: true});
-	copyTile(tilesPng, out, 5, 5, 0); // top
+	copyTile(tilesPng, out, 5 + tileOffset, 0, 0); // top
 	for (let y = 1; y < height-1; y++) {
-		copyTile(tilesPng, out, 15, 0, y); // middle
+		copyTile(tilesPng, out, 15 + tileOffset, 0, y); // middle
 	}
-	copyTile(tilesPng, out, 20, 0, height-1); // bottom
+	copyTile(tilesPng, out, 20 + tileOffset, 0, height-1); // bottom
 	return out;
 }
 
-function drawHouseLarge(tilesPng, width, height) {
+function drawHouseLarge(tilesPng, width, height, tileOffset = 0) {
 	const out = new PNG({width: width * TILE_SIZE, height: (height + 1) * TILE_SIZE, fill: true});
 	// Extra top row using first row of tiles
 	for (let x = 0; x < width; x++) {
@@ -84,7 +92,7 @@ function drawHouseLarge(tilesPng, width, height) {
 		if (x === 0) tileIdx = 1;
 		else if (x === width-1) tileIdx = 4;
 		else tileIdx = (x % 4 === 2 ? 2 : 3);
-		copyTile(tilesPng, out, tileIdx, x, 0);
+		copyTile(tilesPng, out, tileIdx + tileOffset, x, 0);
 	}
 	// Top row (now second row)
 	for (let x = 0; x < width; x++) {
@@ -92,7 +100,7 @@ function drawHouseLarge(tilesPng, width, height) {
 		if (x === 0) tileIdx = 11;
 		else if (x === width-1) tileIdx = 14;
 		else tileIdx = (x % 2 === 0 ? 13 : 12);
-		copyTile(tilesPng, out, tileIdx, x, 1);
+		copyTile(tilesPng, out, tileIdx + tileOffset, x, 1);
 	}
 	// Middle rows
 	for (let y = 2; y < height; y++) {
@@ -101,7 +109,7 @@ function drawHouseLarge(tilesPng, width, height) {
 			if (x === 0) tileIdx = 16;
 			else if (x === width-1) tileIdx = 19;
 			else tileIdx = (x % 2 === 0 ? 18 : 17);
-			copyTile(tilesPng, out, tileIdx, x, y);
+			copyTile(tilesPng, out, tileIdx + tileOffset, x, y);
 		}
 	}
 	// Bottom row
@@ -111,7 +119,7 @@ function drawHouseLarge(tilesPng, width, height) {
 		else if (x === width-1) tileIdx = 24; // 19+5
 		else if (x === Math.floor(width/2)) tileIdx = 0; // 22+5
 		else tileIdx = (x % 2 === 0 ? 23 : 22); // 18+5 : 17+5
-		copyTile(tilesPng, out, tileIdx, x, height);
+		copyTile(tilesPng, out, tileIdx + tileOffset, x, height);
 	}
 	return out;
 }
@@ -127,8 +135,8 @@ export async function drawAllPropertiesImage(properties) {
 	const tilesPng = await loadTilesPng();
 	// Calculate each house's size
 	const houseImages = users.map(userId => {
-		const {width, height} = properties[userId];
-		return drawHouse(tilesPng, width, height);
+		const {width, height, style} = properties[userId];
+		return drawHouse(tilesPng, width, height, style);
 	});
 	const houseWidths = houseImages.map(img => img.width);
 	const houseHeights = houseImages.map(img => img.height);
@@ -162,15 +170,14 @@ export async function drawAllPropertiesImage(properties) {
 	return PNG.sync.write(outPng);
 }
 
-export function drawSinglePropertyImage(tilesPng, width, height) {
-	// Margin and background similar to drawAllPropertiesImage
+export function drawSinglePropertyImage(tilesPng, width, height, style) {
 	const marginSide = 16;
 	const marginTop = 32;
 	const marginBottom = 16;
 	const marginLeft = marginSide;
 	const marginRight = marginSide;
 
-	const house = drawHouse(tilesPng, width, height);
+	const house = drawHouse(tilesPng, width, height, style);
 	const outWidth = house.width + marginLeft + marginRight;
 	const outHeight = house.height + marginTop + marginBottom;
 	const outPng = new PNG({width: outWidth, height: outHeight});

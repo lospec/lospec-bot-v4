@@ -14,7 +14,7 @@ export default async function view(interaction) {
     }
     // Draw just the user's house with margin and ground
     const tiles = await loadTilesPng();
-    const housePng = drawSinglePropertyImage(tiles, userProperty.width, userProperty.height);
+    const housePng = drawSinglePropertyImage(tiles, userProperty.width, userProperty.height, userProperty.style);
     if (!housePng) {
         await interaction.reply({content: 'Failed to render your property.', ephemeral: true});
         return;

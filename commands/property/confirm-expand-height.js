@@ -27,6 +27,8 @@ export default async function confirmExpandHeight(interaction) {
 		return;
 	}
 	userProperty.height = (userProperty.height || 1) + 1;
+	// Ensure style is preserved
+	userProperty.style = userProperty.style || 'Cabin';
 	PROPERTY_DATA.set('properties', properties);
 
 	// Draw and send the updated image

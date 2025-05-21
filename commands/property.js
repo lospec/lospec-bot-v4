@@ -27,6 +27,11 @@ export const config = {
 			name: 'view',
 			description: 'View your property',
 			type: ApplicationCommandOptionType.Subcommand,
+		},
+		{
+			name: 'change-style',
+			description: 'Change the style of your house',
+			type: ApplicationCommandOptionType.Subcommand,
 		}
 	]
 };
