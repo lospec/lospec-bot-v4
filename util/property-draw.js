@@ -68,11 +68,11 @@ function drawHouse1Tall(tilesPng, width) {
 
 function drawHouse1Wide(tilesPng, height) {
 	const out = new PNG({width: TILE_SIZE, height: height * TILE_SIZE, fill: true});
-	copyTile(tilesPng, out, 5, 0, 0); // top
+	copyTile(tilesPng, out, 5, 5, 0); // top
 	for (let y = 1; y < height-1; y++) {
-		copyTile(tilesPng, out, 10, 0, y); // middle
+		copyTile(tilesPng, out, 15, 0, y); // middle
 	}
-	copyTile(tilesPng, out, 15, 0, height-1); // bottom
+	copyTile(tilesPng, out, 20, 0, height-1); // bottom
 	return out;
 }
 
@@ -140,7 +140,7 @@ export async function drawAllPropertiesImage(properties) {
 	const maxHeight = Math.max(...houseHeights);
 	const totalHeight = maxHeight + marginTop + marginBottom;
 	const outPng = new PNG({width: totalWidth, height: totalHeight});
-	fillPng(outPng, 0x37, 0x9d, 0xd7);
+	fillPng(outPng, 0x37, 0xa7, 0xdf);
 	let xOffset = marginSide;
 	for (let i = 0; i < users.length; i++) {
 		const house = houseImages[i];
