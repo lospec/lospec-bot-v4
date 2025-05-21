@@ -1,7 +1,6 @@
 import { PROPERTY_DATA } from '../../data.js';
-import { loadTilesPng, drawSinglePropertyImage } from '../../util/property-draw.js';
+import { drawSinglePropertyImageBuffer } from '../../util/property-draw.js';
 import { AttachmentBuilder } from 'discord.js';
-import { PNG } from 'pngjs';
 
 export default async function view(interaction) {
     await PROPERTY_DATA.assert('properties', false);
@@ -13,13 +12,7 @@ export default async function view(interaction) {
         return;
     }
     // Draw just the user's house with margin and ground
-    const tiles = await loadTilesPng();
-    const housePng = drawSinglePropertyImage(tiles, userProperty.width, userProperty.height, userProperty.style);
-    if (!housePng) {
-        await interaction.reply({content: 'Failed to render your property.', ephemeral: true});
-        return;
-    }
-    const buffer = PNG.sync.write(housePng);
+    const buffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style);
     await interaction.reply({
         content: `Here is your property (${userProperty.width}x${userProperty.height}):`,
         files: [new AttachmentBuilder(buffer, {name: 'property.png'})],

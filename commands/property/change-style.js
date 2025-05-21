@@ -1,7 +1,7 @@
 import { PROPERTY_DATA, PROPERTY_CONFIG } from '../../data.js';
 import { PROPERTY_STYLES } from '../../util/property-styles.js';
 import { getUserBalance, takeUsersMoney } from '../../util/lozpekistan-bank.js';
-import { drawAllPropertiesImage } from '../../util/property-draw.js';
+import { drawAllPropertiesImage, drawSinglePropertyImageBuffer } from '../../util/property-draw.js';
 import { AttachmentBuilder } from 'discord.js';
 import client from '../../client.js';
 import { getChangeStyleBill } from '../../util/property-bill.js';
@@ -166,10 +166,11 @@ export async function handleConfirmChangeStyle(interaction) {
 	delete userProperty.pendingStyle;
 	PROPERTY_DATA.set('properties', properties);
 	const imgBuffer = await drawAllPropertiesImage(properties);
+	const singleBuffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style);
 	await interaction.update({
 		content: `Your house style has been changed to **${newStyle.name}**!`,
 		components: [],
-		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})],
+		files: [new AttachmentBuilder(singleBuffer, {name: 'property.png'})],
 		ephemeral: true
 	});
 	const channelId = PROPERTY_CONFIG.get ? PROPERTY_CONFIG.get('propertyUpdatesChannelId') : PROPERTY_DATA.get('propertyUpdatesChannelId');

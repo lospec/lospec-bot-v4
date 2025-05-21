@@ -201,6 +201,12 @@ export function drawSinglePropertyImage(tilesPng, width, height, style) {
 	return outPng;
 }
 
+export async function drawSinglePropertyImageBuffer(width, height, style) {
+    const tilesPng = await loadTilesPng();
+    const png = drawSinglePropertyImage(tilesPng, width, height, style);
+    return PNG.sync.write(png);
+}
+
 function drawGround(tilesPng, outPng) {
 	const groundTileX = 4 * TILE_SIZE;
 	const groundTileY = 0 * TILE_SIZE;

@@ -1,6 +1,6 @@
 import { PROPERTY_DATA } from '../../data.js';
 import { takeUsersMoney, getUserBalance } from '../../util/lozpekistan-bank.js';
-import { drawAllPropertiesImage } from '../../util/property-draw.js';
+import { drawAllPropertiesImage, drawSinglePropertyImageBuffer } from '../../util/property-draw.js';
 import { PROPERTY_CONFIG } from '../../data.js';
 import { AttachmentBuilder } from 'discord.js';
 import client from '../../client.js';
@@ -33,8 +33,9 @@ export default async function confirmPropertyBuy(interaction) {
 	properties[userId] = {width: 1, height: 1};
 	PROPERTY_DATA.set('properties', properties);
 
-	// Draw and send the updated image
+	// Draw and send the updated images
 	const imgBuffer = await drawAllPropertiesImage(properties);
+	const singleBuffer = await drawSinglePropertyImageBuffer(1, 1, 'Cabin');
 	const channel = await client.channels.fetch(PROPERTY_CONFIG.get('propertyUpdatesChannelId'));
 	await channel.send({
 		content: `🏠 <@${userId}> purchased a property!`,
@@ -44,7 +45,7 @@ export default async function confirmPropertyBuy(interaction) {
 	await interaction.update({
 		content: 'Property purchased! Your house is now 1x1.',
 		components: [],
-		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})],
+		files: [new AttachmentBuilder(singleBuffer, {name: 'property.png'})],
 		ephemeral: true
 	});
 }
