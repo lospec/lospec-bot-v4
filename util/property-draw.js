@@ -113,15 +113,44 @@ function drawHouse1Wide(tilesPng, height, tileOffset = 0) {
 	return out;
 }
 
+function getDoorPosition(width) {
+	// Find the center-most tile where (x % 2 === 1) (i.e., where tile 22 would be used)
+	let best = -1;
+	let minDist = Infinity;
+	const center = (width - 1) / 2;
+	for (let x = 1; x < width - 1; x++) {
+		if (x % 2 === 1) {
+			const dist = Math.abs(x - center);
+			if (dist < minDist) {
+				minDist = dist;
+				best = x;
+			}
+		}
+	}
+	// If no odd tile found (e.g. width=3), fallback to center
+	if (best === -1) best = Math.round(center);
+	return best;
+}
+
 function drawHouseLarge(tilesPng, width, height, tileOffset = 0) {
 	const out = new PNG({width: width * TILE_SIZE, height: (height + 1) * TILE_SIZE, fill: true});
-	// Extra top row using first row of tiles
+	// Fill the extra top row (y=0) with background color except for the middle tiles
 	for (let x = 0; x < width; x++) {
-		let tileIdx;
-		if (x === 0) tileIdx = 1;
-		else if (x === width-1) tileIdx = 4;
-		else tileIdx = (x % 4 === 2 ? 2 : 3);
-		copyTile(tilesPng, out, tileIdx + tileOffset, x, 0);
+		if (x > 0 && x < width - 1) {
+			let tileIdx = (x % 4 === 2 ? 2 : 3);
+			copyTile(tilesPng, out, tileIdx + tileOffset, x, 0);
+		} else {
+			// Fill with background color (0x37, 0xa7, 0xdf)
+			for (let dy = 0; dy < TILE_SIZE; dy++) {
+				for (let dx = 0; dx < TILE_SIZE; dx++) {
+					const idx = ((0 * TILE_SIZE + dy) * out.width + (x * TILE_SIZE + dx)) << 2;
+					out.data[idx] = 0x37;
+					out.data[idx+1] = 0xa7;
+					out.data[idx+2] = 0xdf;
+					out.data[idx+3] = 255;
+				}
+			}
+		}
 	}
 	// Top row (now second row)
 	for (let x = 0; x < width; x++) {
@@ -142,21 +171,22 @@ function drawHouseLarge(tilesPng, width, height, tileOffset = 0) {
 		}
 	}
 	// Bottom row
-	for (let x = 0; x < width; x++) {
-		let tileIdx;
-		if (x === 0) tileIdx = 21; // 16+5
-		else if (x === width-1) tileIdx = 24; // 19+5
-		else if (x === getDoorPosition(width)) tileIdx = 0; // 22+5
-		else tileIdx = (x % 2 === 0 ? 23 : 22); // 18+5 : 17+5
-		copyTile(tilesPng, out, tileIdx + tileOffset, x, height);
+	if (width === 2) {
+		// Special case: use tile 1 for left, 24 for right
+		copyTile(tilesPng, out, 1 + tileOffset, 0, height);
+		copyTile(tilesPng, out, 24 + tileOffset, 1, height);
+	} else {
+		const doorX = getDoorPosition(width);
+		for (let x = 0; x < width; x++) {
+			let tileIdx;
+			if (x === 0) tileIdx = 21;
+			else if (x === width-1) tileIdx = 24;
+			else if (x === doorX) tileIdx = 0;
+			else tileIdx = (x % 2 === 0 ? 23 : 22);
+			copyTile(tilesPng, out, tileIdx + tileOffset, x, height);
+		}
 	}
 	return out;
-}
-
-function getDoorPosition(width) {
-	const center = Math.floor(width/2);
-	if (width % 2 === 0) return center;
-	return center - 1;
 }
 
 export async function drawAllPropertiesImage(properties) {
