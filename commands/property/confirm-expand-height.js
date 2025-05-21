@@ -14,9 +14,9 @@ export default async function confirmExpandHeight(interaction) {
 		await interaction.update({content: 'You do not own a property yet.', components: []});
 		return;
 	}
-	const { total: price } = getExpandHeightBill(userProperty);
+	const bill = getExpandHeightBill(userProperty);
 	try {
-		await takeUsersMoney(userId, price);
+		await takeUsersMoney(userId, bill.total);
 	} catch (err) {
 		const balance = await getUserBalance(userId).catch(() => null);
 		await interaction.update({
@@ -34,7 +34,7 @@ export default async function confirmExpandHeight(interaction) {
 	// Draw and send the updated image
 	const imgBuffer = await drawAllPropertiesImage(properties);
 	await interaction.update({
-		content: `Property updated! Your house is now ${userProperty.width}x${userProperty.height}.`,
+		content: `Your expansion is now complete! Your house is now ${userProperty.width}x${userProperty.height}.`,
 		components: [],
 		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})],
 		ephemeral: true

@@ -50,17 +50,17 @@ export default async function(interaction) {
 		await interaction.update({content: 'Your house is already this style.', components: [], ephemeral: true});
 		return;
 	}
-	const { total: price, billText } = getChangeStyleBill(userProperty, newStyle);
+	const bill = getChangeStyleBill(userProperty, newStyle);
 	let balance = await getUserBalance(userId).catch(() => null);
-	if (balance !== null && balance < price) {
+	if (balance !== null && balance < bill.total) {
 		await interaction.update({
-			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billText}`,
+			content: `You do not have enough money to perform this renovation.\nYour current balance: ${balance}P\nRequired: ${bill.total}P\n\n${billText}`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
-	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billText}\nAre you sure?`;
+	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${bill.total}**.\n${bill.invoice}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [
@@ -95,17 +95,17 @@ export async function handleStyleSelect(interaction) {
 		await interaction.update({content: 'Your house is already this style.', components: [], ephemeral: true});
 		return;
 	}
-	const { total: price, billText } = getChangeStyleBill(userProperty, newStyle);
+	const bill = getChangeStyleBill(userProperty, newStyle);
 	let balance = await getUserBalance(userId).catch(() => null);
-	if (balance !== null && balance < price) {
+	if (balance !== null && balance < bill.total) {
 		await interaction.update({
-			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billText}`,
+			content: `You do not have enough money to perform this renovation.\nYour current balance: ${balance}P\nRequired: ${bill.total}P\n\n${bill.invoice}`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
-	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billText}\nAre you sure?`;
+	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${bill.total}**.\n${bill.invoice}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [
@@ -146,18 +146,18 @@ export async function handleConfirmChangeStyle(interaction) {
 		await interaction.update({content: 'Invalid style selected.', components: [], ephemeral: true});
 		return;
 	}
-	const { total: price } = getChangeStyleBill(userProperty, newStyle);
+	const bill = getChangeStyleBill(userProperty, newStyle);
 	let balance = await getUserBalance(userId).catch(() => null);
-	if (balance !== null && balance < price) {
+	if (balance !== null && balance < bill.total) {
 		await interaction.update({
-			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P`,
+			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${bill.total}P`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
 	try {
-		await takeUsersMoney(userId, price);
+		await takeUsersMoney(userId, bill.total);
 	} catch (err) {
 		await interaction.update({content: `Transaction failed: ${err.message || err}`, components: [], ephemeral: true});
 		return;

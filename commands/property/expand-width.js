@@ -13,7 +13,7 @@ export default async function(interaction) {
 		return;
 	}
 	const bill = getExpandWidthBill(userProperty);
-	const invoice = bill.billText;
+
 	let balance = await getUserBalance(interaction.user.id).catch(() => null);
 	if (balance !== null && balance < bill.total) {
 		await interaction.reply({
@@ -23,7 +23,7 @@ export default async function(interaction) {
 		});
 		return;
 	}
-	const confirmMsg = `Expanding your house width will cost **$${bill.total}**.\n${invoice}\nAre you sure?`;
+	const confirmMsg = `Expanding your house width will cost **$${bill.total}**.\n${bill.invoice}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [
