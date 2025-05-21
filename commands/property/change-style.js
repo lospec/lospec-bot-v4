@@ -4,22 +4,10 @@ import { getUserBalance, takeUsersMoney } from '../../util/lozpekistan-bank.js';
 import { drawAllPropertiesImage } from '../../util/property-draw.js';
 import { AttachmentBuilder } from 'discord.js';
 import client from '../../client.js';
+import { getChangeStyleBill } from '../../util/property-bill.js';
 
 function getStyleByName(name) {
 	return PROPERTY_STYLES.find(s => s.name.toLowerCase() === name.toLowerCase());
-}
-
-function getChangeStyleBill(userProperty, newStyle) {
-	const width = userProperty.width || 1;
-	const height = userProperty.height || 1;
-	const tileCount = width * height;
-	const styleCost = newStyle.cost * tileCount;
-	return {
-		total: styleCost,
-		billLines: [
-			`STYLE CHANGE: ${newStyle.name} x ${tileCount} tiles = $${styleCost}`
-		]
-	};
 }
 
 export default async function(interaction) {
@@ -62,17 +50,17 @@ export default async function(interaction) {
 		await interaction.update({content: 'Your house is already this style.', components: [], ephemeral: true});
 		return;
 	}
-	const { total: price, billLines } = getChangeStyleBill(userProperty, newStyle);
+	const { total: price, billText } = getChangeStyleBill(userProperty, newStyle);
 	let balance = await getUserBalance(userId).catch(() => null);
 	if (balance !== null && balance < price) {
 		await interaction.update({
-			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billLines.join('\n')}`,
+			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billText}`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
-	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billLines.join('\n')}\nAre you sure?`;
+	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billText}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [
@@ -107,17 +95,17 @@ export async function handleStyleSelect(interaction) {
 		await interaction.update({content: 'Your house is already this style.', components: [], ephemeral: true});
 		return;
 	}
-	const { total: price, billLines } = getChangeStyleBill(userProperty, newStyle);
+	const { total: price, billText } = getChangeStyleBill(userProperty, newStyle);
 	let balance = await getUserBalance(userId).catch(() => null);
 	if (balance !== null && balance < price) {
 		await interaction.update({
-			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billLines.join('\n')}`,
+			content: `You do not have enough money to change styles.\nYour current balance: ${balance}P\nRequired: ${price}P\n\n${billText}`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
-	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billLines.join('\n')}\nAre you sure?`;
+	const confirmMsg = `Changing your house style to ${newStyle.name} will cost **$${price}**.\n${billText}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [

@@ -48,3 +48,21 @@ export function getExpandHeightBill(userProperty) {
 		billText: formatBillText({ total: grandTotal, billLines })
 	};
 }
+
+
+export function getChangeStyleBill(userProperty, newStyle) {
+	const width = userProperty.width || 1;
+	const height = userProperty.height || 1;
+	const tileCount = width * height;
+	const styleCost = newStyle.cost * tileCount;
+	const laborCost = tileCount;
+	const billLines = [
+		`MATERIALS (${newStyle.name}) x ${tileCount} tiles = $${styleCost}`,
+		`RENOVATION LABOR x ${tileCount} tiles = $${laborCost}`,
+	];
+	const total = styleCost + laborCost;
+	return {
+		total: total,
+		billText: formatBillText({ total, billLines })
+	};
+}
