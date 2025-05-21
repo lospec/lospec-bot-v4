@@ -45,7 +45,6 @@ export default async function confirmExpandWidth(interaction) {
 
 client.on('interactionCreate', async interaction => {
 	if (interaction.isButton() && interaction.customId === 'property_confirm_expand-width') {
-		const handler = exports.default;
-		if (handler) return handler(interaction);
+		return await confirmExpandWidth(interaction);
 	}
 });

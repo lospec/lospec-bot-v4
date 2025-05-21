@@ -10,25 +10,18 @@ export default async function(interaction) {
 		await interaction.reply({content: 'You do not own a property yet. Use /property buy first!', ephemeral: true});
 		return;
 	}
-	const { total: price, billLines } = getExpandHeightBill(userProperty);
-	const invoice = [
-		'```',
-		'HOME EXPANSION INVOICE',
-		...billLines.map(l => l.toUpperCase()),
-		'--------------------------',
-		`TOTAL: $${price}`,
-		'```'
-	].join('\n');
+	const bill = getExpandHeightBill(userProperty);
+	const invoice = bill.billText;
 	let balance = await getUserBalance(interaction.user.id).catch(() => null);
-	if (balance !== null && balance < price) {
+	if (balance !== null && balance < bill.total) {
 		await interaction.reply({
-			content: `You do not have enough money to purchase this expansion.\nYour current balance: ${balance}P\nRequired: ${price}P\n${invoice}`,
+			content: `You do not have enough money to purchase this expansion.\nYour current balance: ${balance}P\nRequired: ${bill.total}P\n${invoice}`,
 			components: [],
 			ephemeral: true
 		});
 		return;
 	}
-	const confirmMsg = `Expanding your house height will cost **$${price}**.\n${invoice}\nAre you sure?`;
+	const confirmMsg = `Expanding your house height will cost **$${bill.total}**.\n${invoice}\nAre you sure?`;
 	const confirmationActionRow = {
 		type: 1,
 		components: [

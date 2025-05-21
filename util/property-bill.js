@@ -1,5 +1,16 @@
 import { PROPERTY_STYLES } from './property-styles.js';
 
+function formatBillText({ total, billLines }) {
+	return [
+		'```',
+		'HOME EXPANSION INVOICE',
+		...billLines.map(l => l.toUpperCase()),
+		'--------------------------',
+		`TOTAL: $${total}`,
+		'```'
+	].join('\n');
+}
+
 export function getExpandWidthBill(userProperty) {
 	const width = userProperty.width || 1;
 	const height = userProperty.height || 1;
@@ -16,7 +27,8 @@ export function getExpandWidthBill(userProperty) {
 	billLines.push(`LAND FEE FOR WIDTH ${width + 1} = $${landFee}`);
 	const materialsFee = styleObj.cost * height;
 	billLines.push(`MATERIALS (${styleObj.name}) x ${height} = $${materialsFee}`);
-	return { total: tileTotal + landFee + materialsFee, billLines, tileTotal, landFee, materialsFee };
+	const total = tileTotal + landFee + materialsFee;
+	return { total, billText: formatBillText({ total, billLines }), tileTotal, landFee, materialsFee };
 }
 
 
@@ -28,11 +40,11 @@ export function getExpandHeightBill(userProperty) {
 	const floorCost = height + 1;
 	const total = width * floorCost;
 	const materialsFee = styleObj.cost * width;
-	const billLine = `FLOOR ${floorCost} BLOCK X ${width} = $${total}`;
-	let billLines = [billLine];
+	const billLines = [`FLOOR ${floorCost} BLOCK X ${width} = $${total}`];
 	billLines.push(`MATERIALS (${styleObj.name}) x ${width} = $${materialsFee}`);
+	const grandTotal = total + materialsFee;
 	return {
-		total: total + materialsFee,
-		billLines
+		total: grandTotal,
+		billText: formatBillText({ total: grandTotal, billLines })
 	};
 }
