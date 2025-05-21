@@ -43,7 +43,7 @@ export default async function confirmPropertyBuy(interaction) {
 	});
 
 	await interaction.update({
-		content: 'Property purchased! Your house is now 1x1.',
+		content: 'Congratulations! You have purchased a property!\nYour house is now 1x1.\n\nYou can expand or remodel your house with the other property commands!',
 		components: [],
 		files: [new AttachmentBuilder(singleBuffer, {name: 'property.png'})],
 		ephemeral: true
