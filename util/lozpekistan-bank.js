@@ -51,3 +51,14 @@ export async function takeUsersMoney (userId, price) {
 		throw new Error('Failed to withdraw money');
 	}
 }
+
+export async function getUserBalance(userId) {
+    try {
+        const response = await fetch(API_URL+'/balance/'+userId, API_REQUEST_OPTIONS);
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        console.error('Failed to fetch user balance', err);
+        throw new Error('Failed to fetch user balance');
+    }
+}
