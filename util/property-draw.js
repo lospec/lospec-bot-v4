@@ -117,11 +117,17 @@ function drawHouseLarge(tilesPng, width, height, tileOffset = 0) {
 		let tileIdx;
 		if (x === 0) tileIdx = 21; // 16+5
 		else if (x === width-1) tileIdx = 24; // 19+5
-		else if (x === Math.floor(width/2)) tileIdx = 0; // 22+5
+		else if (x === getDoorPosition(width)) tileIdx = 0; // 22+5
 		else tileIdx = (x % 2 === 0 ? 23 : 22); // 18+5 : 17+5
 		copyTile(tilesPng, out, tileIdx + tileOffset, x, height);
 	}
 	return out;
+}
+
+function getDoorPosition(width) {
+	const center = Math.floor(width/2);
+	if (width % 2 === 0) return center;
+	return center - 1;
 }
 
 export async function drawAllPropertiesImage(properties) {
