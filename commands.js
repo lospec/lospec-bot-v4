@@ -55,21 +55,6 @@ client.once('ready', async c => {
 });
 
 client.on('interactionCreate', async interaction => {
-	if (interaction.isButton()) {
-		if (interaction.customId === 'property_confirm_buy') {
-			const handler = COMMANDS['property.confirm-buy'];
-			if (handler) return handler(interaction);
-		}
-		if (interaction.customId === 'property_confirm_expand-width') {
-			const handler = COMMANDS['property.confirm-expand-width'];
-			if (handler) return handler(interaction);
-		}
-		if (interaction.customId === 'property_confirm_expand-height') {
-			const handler = COMMANDS['property.confirm-expand-height'];
-			if (handler) return handler(interaction);
-		}
-		// TODO: Add similar logic for expand-height
-	}
 	if (!interaction.isCommand()) return;
 	console.log('/'+ interaction.commandName, 'triggered');
 

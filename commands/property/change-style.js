@@ -1,4 +1,4 @@
-import { PROPERTY_DATA } from '../../data.js';
+import { PROPERTY_DATA, PROPERTY_CONFIG } from '../../data.js';
 import { PROPERTY_STYLES } from '../../util/property-styles.js';
 import { getUserBalance, takeUsersMoney } from '../../util/lozpekistan-bank.js';
 import { drawAllPropertiesImage } from '../../util/property-draw.js';
@@ -142,9 +142,17 @@ export async function handleConfirmChangeStyle(interaction) {
 		await interaction.update({content: 'You do not own a property yet. Use /property buy first!', components: [], ephemeral: true});
 		return;
 	}
-	// Retrieve the new style from the interaction (you may need to pass this via customId, message metadata, or a cache)
-	// For this example, assume the frontend passes the style name as a hidden field or in the interaction's customId
-	const newStyleName = interaction.customIdStyleName || userProperty.pendingStyle; // Replace with your actual retrieval logic
+	// Try to get the style from a temporary property on the userProperty object
+	let newStyleName = userProperty.pendingStyle;
+	if (!newStyleName && interaction.message && interaction.message.content) {
+		// Try to parse the style name from the confirmation message
+		const match = interaction.message.content.match(/house style to ([^\s]+) will cost/i);
+		if (match) newStyleName = match[1];
+	}
+	if (!newStyleName) {
+		await interaction.update({content: 'Could not determine the selected style. Please try again.', components: [], ephemeral: true});
+		return;
+	}
 	const newStyle = getStyleByName(newStyleName);
 	if (!newStyle) {
 		await interaction.update({content: 'Invalid style selected.', components: [], ephemeral: true});
@@ -167,6 +175,7 @@ export async function handleConfirmChangeStyle(interaction) {
 		return;
 	}
 	userProperty.style = newStyle.name;
+	delete userProperty.pendingStyle;
 	PROPERTY_DATA.set('properties', properties);
 	const imgBuffer = await drawAllPropertiesImage(properties);
 	await interaction.update({
@@ -175,6 +184,33 @@ export async function handleConfirmChangeStyle(interaction) {
 		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})],
 		ephemeral: true
 	});
-	const channel = await client.channels.fetch(PROPERTY_DATA.get('propertyUpdatesChannelId'));
-	await channel.send({content: `🏠 ${interaction.user.username} changed their house style to **${newStyle.name}**!`, files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})]});
+	const channelId = PROPERTY_CONFIG.get ? PROPERTY_CONFIG.get('propertyUpdatesChannelId') : PROPERTY_DATA.get('propertyUpdatesChannelId');
+	if (channelId) {
+		const channel = await client.channels.fetch(channelId).catch(() => null);
+		if (channel) {
+			await channel.send({content: `🏠 ${interaction.user.username} changed their house style to **${newStyle.name}**!`, files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})]});
+		}
+	}
 }
+
+// Handler for style select menu and confirmation button
+export async function handlePropertyInteraction(interaction) {
+	if (interaction.isStringSelectMenu() && interaction.customId === 'property_change_style_select') {
+		await handleStyleSelect(interaction);
+		return;
+	}
+	if (interaction.isButton() && interaction.customId === 'property_confirm_change-style') {
+		await handleConfirmChangeStyle(interaction);
+		return;
+	}
+}
+
+// Register property style select and confirm button listeners
+client.on('interactionCreate', async interaction => {
+	if (
+		(interaction.isStringSelectMenu() && interaction.customId === 'property_change_style_select') ||
+		(interaction.isButton() && interaction.customId === 'property_confirm_change-style')
+	) {
+		await handlePropertyInteraction(interaction);
+	}
+});
