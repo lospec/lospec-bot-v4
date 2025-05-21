@@ -1,7 +1,7 @@
 import { PNG } from 'pngjs';
 import fs from 'fs';
 import path from 'path';
-import { PROPERTY_STYLES } from './property-styles.js';
+import { PROPERTY_STYLES, PROPERTY_ACCENTS } from './property-styles.js';
 
 const TILE_SIZE = 16;
 const TILES_W = 5;
@@ -25,19 +25,48 @@ export async function loadTilesPng() {
 	});
 }
 
-export function drawHouse(tilesPng, width, height, styleName = 'Cabin') {
-	const styleIndex = getStyleIndex(styleName);
-	const tileOffset = styleIndex * 25; // 25 tiles per style
-	if (width === 1 && height === 1) {
-		return drawHouse1x1(tilesPng, tileOffset);
-	}
-	if (height === 1) {
-		return drawHouse1Tall(tilesPng, width, tileOffset);
-	}
-	if (width === 1) {
-		return drawHouse1Wide(tilesPng, height, tileOffset);
-	}
-	return drawHouseLarge(tilesPng, width, height, tileOffset);
+function replaceAccentColors(png, accentName) {
+    if (!accentName || !PROPERTY_ACCENTS[accentName]) return;
+    const accent = PROPERTY_ACCENTS[accentName];
+    const fromColors = ['ff80ff', 'ff00ff', '800080'];
+    const toColors = accent;
+	let replacedPixels = 0;
+    for (let i = 0; i < png.width * png.height; i++) {
+        const idx = i * 4;
+        const hex =
+            ((png.data[idx] << 16) | (png.data[idx + 1] << 8) | png.data[idx + 2])
+                .toString(16)
+                .padStart(6, '0');
+        const colorIdx = fromColors.indexOf(hex);
+        if (colorIdx !== -1) {
+            const toHex = toColors[colorIdx];
+            png.data[idx] = parseInt(toHex.slice(0, 2), 16);
+            png.data[idx + 1] = parseInt(toHex.slice(2, 4), 16);
+            png.data[idx + 2] = parseInt(toHex.slice(4, 6), 16);
+
+			replacedPixels++;
+        }
+    }
+
+	console.log(`Replaced ${replacedPixels} pixels with accent color ${accentName}`);
+}
+
+export function drawHouse(tilesPng, width, height, styleName = 'Cabin', accentName) {
+	console.log(`Drawing house: ${width}x${height}, style: ${styleName}, accent: ${accentName}`);
+    const styleIndex = getStyleIndex(styleName);
+    const tileOffset = styleIndex * 25; // 25 tiles per style
+    let out;
+    if (width === 1 && height === 1) {
+        out = drawHouse1x1(tilesPng, tileOffset);
+    } else if (height === 1) {
+        out = drawHouse1Tall(tilesPng, width, tileOffset);
+    } else if (width === 1) {
+        out = drawHouse1Wide(tilesPng, height, tileOffset);
+    } else {
+        out = drawHouseLarge(tilesPng, width, height, tileOffset);
+    }
+    replaceAccentColors(out, accentName);
+    return out;
 }
 
 function getStyleIndex(styleName) {
@@ -131,59 +160,59 @@ function getDoorPosition(width) {
 }
 
 export async function drawAllPropertiesImage(properties) {
-	const users = Object.keys(properties);
-	if (users.length === 0) {
-		// Return a blank image with just the background
-		const blank = new PNG({width: 64, height: 64});
-		fillPng(blank, 0x37, 0x9d, 0xd7);
-		return PNG.sync.write(blank);
-	}
-	const tilesPng = await loadTilesPng();
-	// Calculate each house's size
-	const houseImages = users.map(userId => {
-		const {width, height, style} = properties[userId];
-		return drawHouse(tilesPng, width, height, style);
-	});
-	const houseWidths = houseImages.map(img => img.width);
-	const houseHeights = houseImages.map(img => img.height);
-	const marginBetween = 8;
-	const marginSide = 16;
-	const marginTop = 32;
-	const marginBottom = 16;
-	const totalWidth = houseWidths.reduce((a, b) => a + b, 0) + marginBetween * (users.length - 1) + marginSide * 2;
-	const maxHeight = Math.max(...houseHeights);
-	const totalHeight = maxHeight + marginTop + marginBottom;
-	const outPng = new PNG({width: totalWidth, height: totalHeight});
-	fillPng(outPng, 0x37, 0xa7, 0xdf);
-	let xOffset = marginSide;
-	for (let i = 0; i < users.length; i++) {
-		const house = houseImages[i];
-		const yOffset = marginTop + (maxHeight - house.height);
-		for (let y = 0; y < house.height; y++) {
-			for (let x = 0; x < house.width; x++) {
-				const idx = (y * house.width + x) << 2;
-				const outIdx = ((y + yOffset) * outPng.width + (x + xOffset)) << 2;
-				for (let c = 0; c < 4; c++) {
-					outPng.data[outIdx + c] = house.data[idx + c];
-				}
-			}
-		}
-		xOffset += house.width + marginBetween;
-	}
+    const users = Object.keys(properties);
+    if (users.length === 0) {
+        // Return a blank image with just the background
+        const blank = new PNG({width: 64, height: 64});
+        fillPng(blank, 0x37, 0x9d, 0xd7);
+        return PNG.sync.write(blank);
+    }
+    const tilesPng = await loadTilesPng();
+    // Calculate each house's size
+    const houseImages = users.map(userId => {
+        const {width, height, style, accent} = properties[userId];
+        return drawHouse(tilesPng, width, height, style, accent);
+    });
+    const houseWidths = houseImages.map(img => img.width);
+    const houseHeights = houseImages.map(img => img.height);
+    const marginBetween = 8;
+    const marginSide = 16;
+    const marginTop = 32;
+    const marginBottom = 16;
+    const totalWidth = houseWidths.reduce((a, b) => a + b, 0) + marginBetween * (users.length - 1) + marginSide * 2;
+    const maxHeight = Math.max(...houseHeights);
+    const totalHeight = maxHeight + marginTop + marginBottom;
+    const outPng = new PNG({width: totalWidth, height: totalHeight});
+    fillPng(outPng, 0x37, 0xa7, 0xdf);
+    let xOffset = marginSide;
+    for (let i = 0; i < users.length; i++) {
+        const house = houseImages[i];
+        const yOffset = marginTop + (maxHeight - house.height);
+        for (let y = 0; y < house.height; y++) {
+            for (let x = 0; x < house.width; x++) {
+                const idx = (y * house.width + x) << 2;
+                const outIdx = ((y + yOffset) * outPng.width + (x + xOffset)) << 2;
+                for (let c = 0; c < 4; c++) {
+                    outPng.data[outIdx + c] = house.data[idx + c];
+                }
+            }
+        }
+        xOffset += house.width + marginBetween;
+    }
 
-	drawGround(tilesPng, outPng);
+    drawGround(tilesPng, outPng);
 
-	return PNG.sync.write(outPng);
+    return PNG.sync.write(outPng);
 }
 
-export function drawSinglePropertyImage(tilesPng, width, height, style) {
+export function drawSinglePropertyImage(tilesPng, width, height, style, accent) {
 	const marginSide = 16;
 	const marginTop = 32;
 	const marginBottom = 16;
 	const marginLeft = marginSide;
 	const marginRight = marginSide;
 
-	const house = drawHouse(tilesPng, width, height, style);
+	const house = drawHouse(tilesPng, width, height, style, accent);
 	const outWidth = house.width + marginLeft + marginRight;
 	const outHeight = house.height + marginTop + marginBottom;
 	const outPng = new PNG({width: outWidth, height: outHeight});
@@ -207,9 +236,9 @@ export function drawSinglePropertyImage(tilesPng, width, height, style) {
 	return outPng;
 }
 
-export async function drawSinglePropertyImageBuffer(width, height, style) {
+export async function drawSinglePropertyImageBuffer(width, height, style, accent) {
     const tilesPng = await loadTilesPng();
-    const png = drawSinglePropertyImage(tilesPng, width, height, style);
+    const png = drawSinglePropertyImage(tilesPng, width, height, style, accent);
     return PNG.sync.write(png);
 }
 

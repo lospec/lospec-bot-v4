@@ -12,7 +12,7 @@ export default async function view(interaction) {
         return;
     }
     // Draw just the user's house with margin and ground
-    const buffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style);
+    const buffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style, userProperty.accent);
     await interaction.reply({
         content: `Here is your property (${userProperty.width}x${userProperty.height}):`,
         files: [new AttachmentBuilder(buffer, {name: 'property.png'})],

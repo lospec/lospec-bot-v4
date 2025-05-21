@@ -33,3 +33,6 @@ export default async function(interaction) {
 	};
 	await interaction.reply({content: confirmMsg, components: [confirmationActionRow], ephemeral: true});
 }
+
+// When confirming buy, set default accent to 'brown' for new property
+// (This should be handled in confirm-buy.js when the property is actually created)

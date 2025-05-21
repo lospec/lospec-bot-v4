@@ -33,7 +33,7 @@ export default async function confirmExpandHeight(interaction) {
 
 	// Draw and send the updated images
 	const imgBuffer = await drawAllPropertiesImage(properties);
-	const singleBuffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style);
+	const singleBuffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style, userProperty.accent);
 	await interaction.update({
 		content: `Your expansion is now complete! Your house is now ${userProperty.width}x${userProperty.height}.`,
 		components: [],

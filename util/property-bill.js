@@ -77,3 +77,16 @@ export function getChangeStyleBill(userProperty, newStyle) {
 	return new PropertyBill('renovation', total, billLines);
 }
 
+
+export function getChangeAccentBill(userProperty, newAccent) {
+    const width = userProperty.width || 1;
+    const height = userProperty.height || 1;
+    const tileCount = width * height;
+    const accentCost = 2 * tileCount;
+    const billLines = [
+        `ACCENT COLOR CHANGE x ${tileCount} tiles = $${accentCost}`
+    ];
+    const total = accentCost;
+    return new PropertyBill('accent', total, billLines);
+}
+

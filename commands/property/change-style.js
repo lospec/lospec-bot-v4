@@ -166,7 +166,7 @@ export async function handleConfirmChangeStyle(interaction) {
 	delete userProperty.pendingStyle;
 	PROPERTY_DATA.set('properties', properties);
 	const imgBuffer = await drawAllPropertiesImage(properties);
-	const singleBuffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style);
+	const singleBuffer = await drawSinglePropertyImageBuffer(userProperty.width, userProperty.height, userProperty.style, userProperty.accent);
 	await interaction.update({
 		content: `Your house style has been changed to **${newStyle.name}**!`,
 		components: [],
