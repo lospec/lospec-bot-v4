@@ -38,7 +38,7 @@ export default async function confirmPropertyBuy(interaction) {
 	const singleBuffer = await drawSinglePropertyImageBuffer(1, 1, 'Cabin');
 	const channel = await client.channels.fetch(PROPERTY_CONFIG.get('propertyUpdatesChannelId'));
 	await channel.send({
-		content: `🏠 <@${userId}> purchased a property!`,
+		content: `<@${userId}> purchased a property!`,
 		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})]
 	});
 

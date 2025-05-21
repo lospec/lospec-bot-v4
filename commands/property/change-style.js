@@ -178,7 +178,7 @@ export async function handleConfirmChangeStyle(interaction) {
 		const channel = await client.channels.fetch(channelId).catch(() => null);
 		if (channel) {
 			await channel.send({
-				content: `🏠 <@${userId}> changed their house style to **${newStyle.name}**!`,
+				content: `<@${userId}> changed their house style to **${newStyle.name}**!`,
 				files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})]
 			});
 		}

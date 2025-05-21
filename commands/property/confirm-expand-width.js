@@ -42,7 +42,7 @@ export default async function confirmExpandWidth(interaction) {
 	});
 	const channel = await client.channels.fetch(PROPERTY_CONFIG.get('propertyUpdatesChannelId'));
 	await channel.send({
-		content: `🏠 <@${userId}> expanded their house width to ${userProperty.width}`,
+		content: `<@${userId}> expanded their house width to ${userProperty.width}`,
 		files: [new AttachmentBuilder(imgBuffer, {name: 'properties.png'})]
 	});
 }
