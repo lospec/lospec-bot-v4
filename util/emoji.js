@@ -35,7 +35,7 @@ export async function checkIfServerHasFreeEmojiSlots (guild) {
 	console.log('server has',freeEmojiSlots,'free emoji slots', {premiumTier, totalEmojiSlots, usedEmojiSlots});
 
 	if (freeEmojiSlots > 0) return;
-	throw new Error('The server currently has no free emoji slots.');
+	throw new Error('The server currently has no free emoji slots. Use `/emoji remove` to free up a slot before adding a new emoji.');
 }
 
 
