@@ -66,6 +66,11 @@ export const config = {
                     required: false,
                 }
             ]
+        },
+        {
+            name: 'help',
+            description: 'Show help for emoji commands and how to submit new emojis',
+            type: ApplicationCommandOptionType.Subcommand
         }
     ]
 };
