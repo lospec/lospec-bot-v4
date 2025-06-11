@@ -3,6 +3,7 @@ import { simpleGit} from 'simple-git';
 import fsp from 'fs/promises';
 import path from 'path';
 
+
 const EMOJI_ARCHIVE_PATH = '_emoji-archive';
 
 const EMOJI_SLOTS_PER_TIER = [50,100,150,250];
@@ -96,7 +97,6 @@ export async function getEmojiInfo(emojiName) {
 	const creditsCsv = await fsp.readFile(path.join(EMOJI_ARCHIVE_PATH, 'credits.csv'), 'utf-8');
 		if (!creditsCsv) throw new Error('Emoji credits file not found or empty.');
 	const lines = creditsCsv.split('\n');
-	const history = [];
 
 	const emojiInfo = {
 		currentVersion: 0,
@@ -141,3 +141,4 @@ export function formatEmojiDate(dateString) {
 	const options = { year: 'numeric', month: 'short', day: 'numeric' };
 	return date.toLocaleDateString('en-US', options);
 }
+
