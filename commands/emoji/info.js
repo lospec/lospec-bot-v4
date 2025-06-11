@@ -2,6 +2,7 @@ import { AttachmentBuilder } from 'discord.js';
 import path, { format } from 'path';
 import { scalePng } from '../../util/scale-png.js';
 import { getEmojiInfo, getEmojiOnServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive, formatEmojiDate } from '../../util/emoji.js';
+import { generateEmojiHistoryImage } from '../../util/generate-emoji-history-image.js';
 
 const OUTPUT_PATH = '_emoji-archive';
 
@@ -25,7 +26,6 @@ export default async (interaction) => {
 	let emojiIsOnServer, serverEmojiTag;
 	try	{ 
 		const emoji = await getEmojiOnServer(interaction.guild, emojiName);
-		console.log('emoji found on server:', emoji);
 		emojiIsOnServer = true;
 		serverEmojiTag = `<:${emojiName}:${emoji.id}>`;
 	} 
@@ -37,19 +37,35 @@ export default async (interaction) => {
         return `${formatEmojiDate(entry.date)}: ${entry.version === '1'?'created':'updated'} by **${entry.author}**`;
     }).join('\n');
 
+    // Generate the history image
+    let historyImageAttachment = null;
+    const historyImageBuffer = await generateEmojiHistoryImage(emojiName, emojiInfo.history, emojiInfo.currentVersion);
+    if (historyImageBuffer) {
+        historyImageAttachment = new AttachmentBuilder(historyImageBuffer, { name: 'history.png' });
+    }
+
     const embed = {
         title: `:${emojiName}: Emoji Information`,
         thumbnail: { url: 'attachment://emoji.png' },
 		description: `
+			\n**Status:** ${emojiIsOnServer ? 'In server' : 'Not in server'}
 			\n**Category:** ${emojiInfo.category}
-			\n**History:** \n${historyText}
-			\n${emojiIsOnServer ? `This emoji is currently present in the server: ${serverEmojiTag}`: `This emoji is not currently present in the server. You can add it using the \`/emoji add\` command.`}
-			\n-# Emoji data sourced from the [Lospec Emoji Archive](https://github.com/lospec/emoji-archive)
-			`,
+			\n**History:** \n${historyText}`,
+		footer: {text: `Emoji data sourced from the Lospec Emoji Archive`},
     };
 
+    // If history image was generated, add it to the embed
+    if (historyImageAttachment) {
+        embed.image = { url: 'attachment://history.png' };
+    }
+    
+    const files = [new AttachmentBuilder(emojiImageScaled, { name: 'emoji.png' })];
+    if (historyImageAttachment) {
+        files.push(historyImageAttachment);
+    }
+
     await interaction.reply({
-        files: [new AttachmentBuilder(emojiImageScaled, { name: 'emoji.png' })],
+        files: files,
         embeds: [embed],
         ephemeral: !postPublicly
     });
