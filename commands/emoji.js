@@ -43,6 +43,25 @@ export const config = {
                     required: true,
                 }
             ]
+        },
+        {
+            name: 'info',
+            description: 'Get information about an emoji',
+            type: ApplicationCommandOptionType.Subcommand,
+            options: [
+                {
+                    name: 'emoji',
+                    description: 'The name of the emoji to get info for',
+                    type: ApplicationCommandOptionType.String,
+                    required: true,
+                },
+                {
+                    name: 'public',
+                    description: 'Post the result publicly instead of just for you (default: false)',
+                    type: ApplicationCommandOptionType.Boolean,
+                    required: false,
+                }
+            ]
         }
     ]
 };

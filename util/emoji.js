@@ -1,8 +1,9 @@
 import { scalePng } from '../util/scale-png.js';
 import { simpleGit} from 'simple-git';
 import fsp from 'fs/promises';
+import path from 'path';
 
-const OUTPUT_PATH = '_emoji-archive';
+const EMOJI_ARCHIVE_PATH = '_emoji-archive';
 
 const EMOJI_SLOTS_PER_TIER = [50,100,150,250];
 
@@ -69,7 +70,7 @@ export async function removeEmojiFromServer(interaction, emojiName) {
 
 export async function updateEmojiArchiveToLatest () {
     console.log(' > updating emoji archive to latest...');
-    const git = simpleGit({baseDir: OUTPUT_PATH});
+    const git = simpleGit({baseDir: EMOJI_ARCHIVE_PATH});
     await git.fetch('origin','main');
     const status = await git.status();
     if (status.behind > 0) {
@@ -89,4 +90,54 @@ export async function checkIfEmojiIsInArchive (emojiPath) {
 		console.error(err);
         throw new Error('Emoji not found in the Lospec Emoji Archive. Please make sure the emoji has been added to the archive before trying to update it.');
     }
+}
+
+export async function getEmojiInfo(emojiName) {
+	const creditsCsv = await fsp.readFile(path.join(EMOJI_ARCHIVE_PATH, 'credits.csv'), 'utf-8');
+		if (!creditsCsv) throw new Error('Emoji credits file not found or empty.');
+	const lines = creditsCsv.split('\n');
+	const history = [];
+
+	const emojiInfo = {
+		currentVersion: 0,
+		currentAuthor: 'Unknown',
+		originalAuthor: 'Unknown',
+		createdOn: 'Unknown',
+		lastUpdate: 'Unknown',
+		category: 'Unknown',
+		history: []
+	};
+
+	for (let i = 1; i < lines.length; i++) {
+		const line = lines[i].trim();
+		if (!line) continue; // Skip empty lines
+
+		const [name, version, author, date, category] = line.split(',');
+		if (name !== emojiName) continue;
+		if (isNaN(parseInt(version))) continue;
+
+		if (emojiInfo.currentVersion === 0) {
+			emojiInfo.originalAuthor = author;
+			emojiInfo.createdOn = date;
+		}
+
+		if (version > emojiInfo.currentVersion) {
+			emojiInfo.currentVersion = version;
+			emojiInfo.currentAuthor = author;
+			emojiInfo.lastUpdate = date;
+			emojiInfo.category = category;
+		}
+
+		emojiInfo.history.push({version, author, date, category});
+	}
+
+	if (emojiInfo.currentVersion === 0) throw new Error(`No emoji called :${emojiName}: was found.`);
+
+	return emojiInfo;
+}
+
+export function formatEmojiDate(dateString) {
+	const date = new Date(dateString);
+	const options = { year: 'numeric', month: 'short', day: 'numeric' };
+	return date.toLocaleDateString('en-US', options);
 }
