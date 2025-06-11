@@ -4,6 +4,10 @@ import fsp from 'fs/promises';
 export async function scalePng (imagePath, scale=4) {
 	const currentImage = await fsp.readFile(imagePath);
 	const sourcePng = PNG.sync.read(currentImage);
+	return await scalePngData(sourcePng, scale);
+}
+
+export async function scalePngData (sourcePng, scale=4) {
 	const targetPng = new PNG({width: sourcePng.width*scale, height: sourcePng.height*scale});
 
 	for (let y = 0; y < sourcePng.height; y++) {
