@@ -15,6 +15,7 @@ export const config = {
                     description: 'The emoji to add (must match an emoji in the Lospec Emoji Archive)',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true
                 }
             ]
         },
@@ -28,6 +29,7 @@ export const config = {
                     description: 'The name of an emoji to remove (must match an emoji in this server)',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true
                 }
             ]
         },
@@ -41,6 +43,7 @@ export const config = {
                     description: 'The name of an emoji to update (must match an emoji in this server)',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true
                 }
             ]
         },
@@ -54,6 +57,7 @@ export const config = {
                     description: 'The name of the emoji to get info for',
                     type: ApplicationCommandOptionType.String,
                     required: true,
+                    autocomplete: true
                 },
                 {
                     name: 'public',
