@@ -1,26 +1,10 @@
-import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
-import client from '../client.js';
-import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
-import { getEmojiOnServer, removeEmojiFromServer, checkIfEmojiIsRemovable } from '../util/emoji.js';
-import {CONFIG} from '../data.js';
+import client from '../../client.js';
+import { checkIfUserCanAfford, takeUsersMoney } from '../../util/lozpekistan-bank.js';
+import { getEmojiOnServer, removeEmojiFromServer, checkIfEmojiIsRemovable } from '../../util/emoji.js';
+import { EMOJI_DATA } from '../../data.js';
 
-await CONFIG.assert('removeEmojiPrice');
-
-const PRICE = CONFIG.get('removeEmojiPrice');
-
-export const config = {
-	name: 'remove-emoji', 
-	description: 'Remove an emoji from this server (costs '+PRICE+'P)', 
-	type: ApplicationCommandType.ChatInput,
-	options: [
-		{
-			name: 'emoji',
-			description: 'The name of an emoji to remove (must match an emoji in this server)',
-			type: ApplicationCommandOptionType.String,
-			required: true,
-		}
-	]
-};
+await EMOJI_DATA.assert('removeEmojiPrice');
+const PRICE = EMOJI_DATA.get('removeEmojiPrice'); 
 
 const confirmationActionRow = {
 	type: 1,
@@ -41,9 +25,10 @@ const confirmationActionRow = {
 };
 
 
-export const execute = async (interaction) => {
+export default async (interaction) => {
 	const emojiName = interaction.options.getString('emoji');
 	let emoji;
+    
 
 	try {
 		await checkIfUserCanAfford(interaction.user.id, PRICE);
@@ -95,8 +80,12 @@ async function confirmRemoveEmoji(interaction) {
 		
 		interaction.update({content: "The `:"+emojiName+":` emoji has been successfully removed from the server. You monster.", embeds: [], components: [], attachments: []});
 
-		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
+		const announcementChannel = await client.channels.fetch(EMOJI_DATA.get('emojiChangesAnnouncementsChannelId'));
 		await announcementChannel.send({content: '💀 '+interaction.user.toString()+' has killed the `:'+emojiName+':` emoji.'});
+
+		let emojis = await EMOJI_DATA.get('emojis') || [];
+		emojis = emojis.filter(e => e.name !== emojiName);
+		await EMOJI_DATA.set('emojis', emojis);
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);

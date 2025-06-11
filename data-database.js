@@ -39,13 +39,18 @@ class Data {
 		collection.updateOne({name: this.slug}, {$set: {[key]: value}});
 	}
 
-	async assert(key, required = true) {
+	async assert(...args) {
+		const required = typeof args[args.length - 1] === 'boolean' ? args.pop() : true;
+		const keys = args;
+
 		await this.initialize();
 		
-		if (!this.store[key] || this.store[key] == '') {
-			this.store[key] = '';
-			await collection.updateOne({_id: this.store._id}, {$set: {[key]: ''}});
-			if (required) throw new Error('Key "'+key+'" is not defined in data store "'+this.slug+'"');
+		for (const key of keys) {
+			if (!this.store[key] || this.store[key] == '') {
+				this.store[key] = '';
+				await collection.updateOne({_id: this.store._id}, {$set: {[key]: ''}});
+				if (required) throw new Error('Key "'+key+'" is not defined in data store "'+this.slug+'"');
+			}
 		}
 	}
 }

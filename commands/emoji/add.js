@@ -2,17 +2,17 @@ import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder
 import { simpleGit} from 'simple-git';
 import fsp from 'fs/promises';
 import path from 'path';
-import client from '../client.js';
-import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
-import { scalePng } from '../util/scale-png.js';
-import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive } from '../util/emoji.js';
-import {CONFIG} from '../data.js';
-await CONFIG.assert('emojiChangesAnnouncementsChannelId');
-await CONFIG.assert('addEmojiPrice');
+import client from '../../client.js';
+import { checkIfUserCanAfford, takeUsersMoney } from '../../util/lozpekistan-bank.js';
+import { scalePng } from '../../util/scale-png.js';
+import { checkIfEmojiExistsOnServer, checkIfServerHasFreeEmojiSlots, addEmojiToServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive } from '../../util/emoji.js';
+import { EMOJI_DATA } from '../../data.js';
 
 const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
-const PRICE = CONFIG.get('addEmojiPrice');
+
+await EMOJI_DATA.assert('addEmojiPrice', 'emojiChangesAnnouncementsChannelId');
+const PRICE = EMOJI_DATA.get('addEmojiPrice'); 
 
 try {
 	await fsp.access(OUTPUT_PATH);
@@ -37,21 +37,7 @@ catch (err) {
 	}
 }
 
-export const config = {
-	name: 'add-emoji', 
-	description: 'Add an emoji from the Lospec Emoji Archive to the server (costs '+PRICE+'P)', 
-	type: ApplicationCommandType.ChatInput,
-	options: [
-		{
-			name: 'emoji',
-			description: 'The emoji to add (must match an emoji in the Lospec Emoji Archive)',
-			type: ApplicationCommandOptionType.String,
-			required: true,
-		}
-	]
-};
-
-//creat an action row with 2 buttons, "add emoji" and "cancel"
+//create an action row with 2 buttons, "add emoji" and "cancel"
 const confirmationActionRow = {
 	type: 1,
 	components: [
@@ -70,10 +56,11 @@ const confirmationActionRow = {
 	]
 };
 
-export const execute = async (interaction) => {
+export default async (interaction) => {
 	const emojiName = interaction.options.getString('emoji');
 	const emojiPath = path.join(OUTPUT_PATH,'current',emojiName+'.png');
 	let emojiImageScaled;
+    
 
 	try {
 		await updateEmojiArchiveToLatest();
@@ -132,7 +119,7 @@ async function confirmAddEmoji(interaction) {
 		await interaction.update({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully added! ', embeds: [], components: [], attachments: []});
 
 		//send announcement to emoji changes channel
-		const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
+		const announcementChannel = await client.channels.fetch(EMOJI_DATA.get('emojiChangesAnnouncementsChannelId'));
 		await announcementChannel.send({content: '🎉 '+interaction.user.toString()+' has added the '+emojiTag+' `:'+emojiName+':` emoji to the server!'});
 	}
 	catch (err) {
