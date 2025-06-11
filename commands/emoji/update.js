@@ -1,29 +1,15 @@
-import { ApplicationCommandType, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
-import client from '../client.js';
-import { checkIfUserCanAfford, takeUsersMoney } from '../util/lozpekistan-bank.js';
-import { removeEmojiFromServer, checkIfEmojiIsRemovable, addEmojiToServer, ensureEmojiExistsOnServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive } from '../util/emoji.js';
-import {CONFIG} from '../data.js';
+import { AttachmentBuilder } from 'discord.js';
+import client from '../../client.js';
+import { checkIfUserCanAfford, takeUsersMoney } from '../../util/lozpekistan-bank.js';
+import { removeEmojiFromServer, checkIfEmojiIsRemovable, addEmojiToServer, ensureEmojiExistsOnServer, updateEmojiArchiveToLatest, checkIfEmojiIsInArchive } from '../../util/emoji.js';
+import { EMOJI_DATA } from '../../data.js';
 import path from 'path';
-import { scalePng } from '../util/scale-png.js';
-
-await CONFIG.assert('updateEmojiPrice');
+import { scalePng } from '../../util/scale-png.js';
 
 const OUTPUT_PATH = '_emoji-archive';
-const PRICE = CONFIG.get('updateEmojiPrice');
 
-export const config = {
-	name: 'update-emoji', 
-	description: 'Update an emoji on this server to the newest version (costs '+PRICE+'P)', 
-	type: ApplicationCommandType.ChatInput,
-	options: [
-		{
-			name: 'emoji',
-			description: 'The name of an emoji to update (must match an emoji in this server)',
-			type: ApplicationCommandOptionType.String,
-			required: true,
-		}
-	]
-};
+await EMOJI_DATA.assert('updateEmojiPrice');
+const PRICE = EMOJI_DATA.get('updateEmojiPrice');
 
 const confirmationActionRow = {
 	type: 1,
@@ -43,10 +29,11 @@ const confirmationActionRow = {
 	]
 };
 
-export const execute = async (interaction) => {
+export default async (interaction) => {
     const emojiName = interaction.options.getString('emoji');
     const emojiPath = path.join(OUTPUT_PATH,'current',emojiName+'.png');
     let emojiImageScaled;
+    
 
     try {
         await updateEmojiArchiveToLatest();
@@ -113,7 +100,7 @@ async function confirmUpdateEmoji(interaction) {
         await interaction.update({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully updated! ', embeds: [], components: [], attachments: []});
 
         //send announcement to emoji changes channel
-        const announcementChannel = await client.channels.fetch(CONFIG.get('emojiChangesAnnouncementsChannelId'));
+        const announcementChannel = await client.channels.fetch(EMOJI_DATA.get('emojiChangesAnnouncementsChannelId'));
         await announcementChannel.send({content: '🌟 '+interaction.user.toString()+' has updated the '+emojiTag+' `:'+emojiName+':` emoji on the server!'});
     }
     catch (err) {

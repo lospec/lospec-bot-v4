@@ -22,12 +22,18 @@ class Data {
 		return this.store.set(key, value);
 	}
 
-	assert(key, required = true) {
-		let value = this.get(key);
-		if (!value || value == '') this.set(key, '');
-		else return true;
-		
-		if (required) throw new Error('Key "'+key+'" not defined in data store "'+this.slug+'"');
+	assert(...args) {
+		const required = typeof args[args.length - 1] === 'boolean' ? args.pop() : true;
+		const keys = args;
+
+		for (const key of keys) {
+			let value = this.get(key);
+			if (!value || value == '') {
+				this.set(key, '');
+				if (required) throw new Error('Key "'+key+'" not defined in data store "'+this.slug+'"');
+			}
+		}
+		return true;
 	}
 }
 
