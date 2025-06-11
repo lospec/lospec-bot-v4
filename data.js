@@ -1,4 +1,3 @@
-
 var Data;
 
 if (process.env.MONGO_URI ) Data = (await import('./data-database.js')).default;

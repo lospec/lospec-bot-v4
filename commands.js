@@ -10,6 +10,7 @@ const COMMANDS = {};
 client.once('ready', async c => {
 	let commandsList = [];
 	let commandFileList = glob.sync('./commands/*.js');
+	let subcommandFileList = glob.sync('./commands/*/*.js');
 
 	for (let commandPath of commandFileList) {
 		let commandName = path.basename(commandPath, '.js');
@@ -22,11 +23,25 @@ client.once('ready', async c => {
 		}
 
 		if (!command.config) {console.warn('⚠ Command "'+commandPath+'" has no config export'); continue;}
-		if (!command.execute) {console.warn('⚠ Command "'+commandPath+'" has no execute export'); continue;}
-		if (!command.execute.constructor.name == 'AsyncFunction') console.warn('command "'+commandPath+'" execute function is not async');
 		commandsList.push(command.config);
-		COMMANDS[command.config.name] = command.execute;
+		COMMANDS[command.config.name] = command.execute || null;
 		console.log('Loaded command:', '/'+command.config.name);
+	}
+
+	// Load subcommands as COMMANDS[command.subcommand]
+	for (let subPath of subcommandFileList) {
+		let rel = path.relative('./commands', subPath).replace(/\\/g, '/');
+		let [parent, sub] = rel.split('/');
+		sub = sub.replace('.js','');
+		let subcommand;
+		try { subcommand = (await import('./commands/'+parent+'/'+sub+'.js')).default; }
+		catch (err) {
+			console.error('Failed to load subcommand:', parent+'.'+sub);
+			console.error(err);
+			continue;
+		}
+		COMMANDS[parent+'.'+sub] = subcommand;
+		console.log('Loaded subcommand:', parent+'.'+sub);
 	}
 
 	if (commandsList.length == 0) return console.warn('No commands found');

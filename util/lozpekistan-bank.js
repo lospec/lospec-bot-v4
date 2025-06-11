@@ -51,3 +51,35 @@ export async function takeUsersMoney (userId, price) {
 		throw new Error('Failed to withdraw money');
 	}
 }
+
+export async function getUserBalance(userId) {
+    try {
+        const response = await fetch(API_URL+'/balance/'+userId, API_REQUEST_OPTIONS);
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        console.error('Failed to fetch user balance', err);
+        throw new Error('Failed to fetch user balance');
+    }
+}
+
+export async function giveUserMoney(userId, amount) {
+    try {
+        // post request to /balance/userId with body {amount: amount}
+        const response = await fetch(API_URL+'/balance/'+userId, {
+            method: 'POST',
+            headers: {
+                ...API_REQUEST_OPTIONS.headers,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({amount: amount})
+        });
+        if (!response.ok)
+            throw new Error('Money giving request failed: ' + response.status + ' ' + response.statusText);
+        const data = await response.json();
+        console.log('gave money:', data);
+    } catch (err) {
+        console.error('Failed to give money', err);
+        throw new Error('Failed to give money');
+    }
+}

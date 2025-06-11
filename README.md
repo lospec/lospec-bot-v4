@@ -68,6 +68,14 @@ Add a file to the `./commands` folder with the following exports:
 - `config` - an object containing the JSON configuration for a command
 - `execute` - an async function that is called when the function is run (passes interaction as first argument)
 
+### Subcommands
+
+To create a command with subcommands (e.g. `/parent sub`), create a folder inside the `./commands` directory (e.g. `./commands/parent`). Then, create a JavaScript file for each subcommand (e.g. `./commands/parent/sub.js`).
+
+Each subcommand file should have a default export which is an async function that is called when the subcommand is run. This function will receive the interaction object as its first argument.
+
+The parent command (e.g. `parent` in `/parent sub`) should have a `config` export in a file named after the parent command directly in the `./commands` folder (e.g. `./commands/parent.js`). This file does not need an `execute` export if all functionality is handled by subcommands.
+
 ## Responses
 
 Respond to a message that matches a filter
