@@ -84,6 +84,16 @@ Add a file to the `./responses` folder with the following exports:
 - `filter` - an async function that checks if the message should trigger a response
 - `execute` - an async function that is called when the filter matches
 
+## Autocompletes
+
+Add an autocomplete that provides suggestions for command options.
+
+Add a file to the `./autocompletes` folder with a default export async function that takes the interaction as its first argument. The function should return an array of choices, either as strings or as objects with `{ name, value }` properties. The loader will handle formatting and calling `interaction.respond()` with the results (up to 25 entries).
+
+Autocompletes are loaded automatically from the `autocompletes` folder, similar to commands. You can use the same autocomplete in multiple commands by referencing its name.
+
+To use an autocomplete in a command, set the `autocomplete` property to `true` in the command option config, and make sure there is a corresponding autocomplete where the file name matches the option name.
+
 ## Data Storage
 
 To run the bot, you must have set up one of the two data storage options, explained above. Both options have identical APIs.
