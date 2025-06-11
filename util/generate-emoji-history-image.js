@@ -28,9 +28,10 @@ export async function generateEmojiHistoryImage(emojiName, history, currentEmoji
             const fileBuffer = await fsp.readFile(versionPath);
             const png = pngjs.PNG.sync.read(fileBuffer);
 
+            // Always use 16x16 for emoji size
             if (loadedPngs.length === 0) {
-                emojiWidth = png.width;
-                emojiHeight = png.height;
+                emojiWidth = 16;
+                emojiHeight = 16;
             }
 
             loadedPngs.push(png);
@@ -51,13 +52,24 @@ export async function generateEmojiHistoryImage(emojiName, history, currentEmoji
     const compositePng = new pngjs.PNG({ width: compositeWidth, height: compositeHeight });
 
     // Draw each emoji and arrow onto the composite image
-    for (let i = 0; i < loadedPngs.length; i++) {        const srcPng = loadedPngs[i];
+    for (let i = 0; i < loadedPngs.length; i++) {
+        const srcPng = loadedPngs[i];
         const emojiX = margin + i * (emojiWidth + arrowWidth); 
         const emojiY = margin; 
 
+        // Calculate source region for 16x16 crop (centered if possible)
+        let srcW = Math.min(16, srcPng.width);
+        let srcH = Math.min(16, srcPng.height);
+        let srcX = Math.max(0, Math.floor((srcPng.width - 16) / 2));
+        let srcY = Math.max(0, Math.floor((srcPng.height - 16) / 2));
+
+        // If the image is smaller than 16x16, draw from top-left
+        if (srcPng.width < 16) srcX = 0;
+        if (srcPng.height < 16) srcY = 0;
+
         pngjs.PNG.bitblt(
             srcPng, compositePng,
-            0, 0, emojiWidth, emojiHeight,
+            srcX, srcY, srcW, srcH,
             emojiX, emojiY
         );
 
