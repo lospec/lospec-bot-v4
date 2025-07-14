@@ -8,5 +8,6 @@ export const CONFIG = new Data('config');
 export const YON_DATA = new Data('yon');
 export const YON_CONFIG = new Data('yon-config');
 export const EMOJI_DATA = new Data('emoji-data');
+export const MEME_DATA = new Data('memes');
 export var Data;
 export default true;
