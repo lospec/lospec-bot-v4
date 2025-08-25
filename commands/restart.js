@@ -1,10 +1,13 @@
-import { ApplicationCommandType, ApplicationCommandOptionType} from 'discord.js';
+import { ApplicationCommandType, PermissionFlagsBits } from 'discord.js';
 import client from '../client.js';
 
 export const config = {
-	name: 'restart', 
-	description: 'Restart this discord bot', 
-	type: ApplicationCommandType.ChatInput
+	name: 'restart',
+	description: 'Admin: Restart this discord bot',
+	default_member_permissions: (PermissionFlagsBits.ManageGuild).toString(),
+	dm_permission: false,
+	type: ApplicationCommandType.ChatInput,
+	options: []
 };
 
 export const execute = async (interaction) => {
