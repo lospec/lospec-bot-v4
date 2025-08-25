@@ -9,6 +9,9 @@ let collections = await db.listCollections().toArray();
 if (!collections.find(c => c.name == 'data')) await db.createCollection('data');
 let collection = db.collection('data');
 
+
+collection.createIndex({ name: 1 }, { unique: true });
+
 console.log('Using MongoDB data storage...');
 
 class Data {

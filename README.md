@@ -110,4 +110,4 @@ Modules that use a lot of properties should be set up with their own data store,
 
 - **.get(** `<string>` key **)** - Get the value associated with the provided key
 - **.set(** `<string>` key, `<any>` value **)** - Set the value of the provided key to the provided value
-- **.assert(** `<string>` key, `<bool>` required *[optional]* **)** (async) - Ensure a value exists in the data store, and if not, create a blank value and throw an error (unless required is set to false). Must be awaited. This gives the developer a place to enter the value manually.
+- **.assert(** `<string>` key, `<bool>` required *[optional]* **)** (async) - Ensure a value exists in the data store, and if not, create a blank value and throw an error (unless required is set to false). Must be awaited. This gives the developer a place to enter the value manually. This should only be used in the top level of a file, so commands will not be loaded if the assertion fails.
