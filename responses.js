@@ -30,16 +30,18 @@ client.once('ready', async c => {
 
 client.on('messageCreate', async message => {
 	console.log('message received:', message.content);
-	
-	if (message.author.bot) return;
+
 	if (!message.guild) return;
 
 	//loop through responses and check if any filter
 	for (let responseName in RESPONSES) {
-		if (await RESPONSES[responseName].filter(message)) {
+		const response = RESPONSES[responseName];
+		if (client.user && message.author.id === client.user.id) continue; //never respond to self
+		if (message.author.bot && !response.allowBots) continue; //opt-in for bots/webhooks
+		if (await response.filter(message)) {
 			console.log('running response "'+responseName+'"');
 			try {
-				await RESPONSES[responseName].execute(message); 
+				await response.execute(message);
 			}
 			catch (err) {
 				console.error(responseName, 'encountered an error:', err);

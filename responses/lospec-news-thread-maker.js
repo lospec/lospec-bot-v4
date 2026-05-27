@@ -1,9 +1,8 @@
-import {CONFIG} from '../data.js';
 import {ThreadAutoArchiveDuration} from 'discord.js';
 
-await CONFIG.assert('heartEmoji');
-
 const CHANNEL_NAME = 'lospec-news';
+
+export const allowBots = true;
 
 export const filter = async (message) => {
 	if (message.channel.name !== CHANNEL_NAME) return false;
