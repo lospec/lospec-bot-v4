@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import startup from "./startup.js";
+import './status.js';
 import commands from './commands.js';
 import responses from './responses.js';
 import reactions from './reactions.js';

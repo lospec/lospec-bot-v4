@@ -82,6 +82,25 @@ is only true for changes made *through the command*: editing the database
 directly still needs a reboot, because the bot will otherwise overwrite your
 edit from memory the next time it writes.
 
+## Status and crash reports
+
+Set `statusThreadId` in the `config` store to a thread id and the bot posts
+there every time it starts, saying how the previous run ended — restarted by
+somebody, shut down cleanly, or killed without ever getting to tidy up.
+
+```
+/config set store:config key:statusThreadId value:<the thread id>
+```
+
+If it crashes it posts there too, with the error and the last few hundred lines
+of console output attached as a file. Deaths that never reach a handler at all,
+like running out of memory, cannot post anything themselves — those are noticed
+by the next run instead, and reported when it comes back up.
+
+`/restart` restarts the bot deliberately, and needs the Manage Server
+permission. It relies on something outside the bot bringing the process back:
+pm2, systemd, docker, whatever is running it.
+
 # Dev
 
 How to expand the bot with new functionality.
