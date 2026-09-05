@@ -1,8 +1,7 @@
 import Datastore from 'data-store';
 import { promises as fs } from 'fs';
 
-try {await fs.access('./_data');}
-catch (err) {await fs.mkdir('./_data');}
+await fs.mkdir('./_data', {recursive: true});
 
 console.log('Using local data storage...');
 
@@ -20,6 +19,10 @@ class Data {
 
 	set(key, value) {
 		return this.store.set(key, value);
+	}
+
+	keys() {
+		return Object.keys(this.store.data || {});
 	}
 
 	assert(...args) {

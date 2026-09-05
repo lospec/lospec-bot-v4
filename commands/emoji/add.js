@@ -12,7 +12,7 @@ const EMOJI_ARCHIVE_URL = 'https://github.com/lospec/emoji-archive.git';
 const OUTPUT_PATH = '_emoji-archive';
 
 await EMOJI_DATA.assert('addEmojiPrice', 'emojiChangesAnnouncementsChannelId');
-const PRICE = EMOJI_DATA.get('addEmojiPrice'); 
+const price = () => EMOJI_DATA.get('addEmojiPrice');
 
 try {
 	await fsp.access(OUTPUT_PATH);
@@ -64,7 +64,7 @@ export default async (interaction) => {
 
 	try {
 		await updateEmojiArchiveToLatest();
-		await checkIfUserCanAfford(interaction.user.id, PRICE);
+		await checkIfUserCanAfford(interaction.user.id, price());
 		await checkIfEmojiIsInArchive(emojiPath);
 		await checkIfEmojiExistsOnServer(interaction.guild, emojiName);
 		await checkIfServerHasFreeEmojiSlots(interaction.guild);
@@ -78,7 +78,7 @@ export default async (interaction) => {
 
 	const embed = {
 		title: 'Confirm Purchase',
-		description: 'You are adding the emoji `:'+emojiName+':` to the server. \n\n This will cost you **'+PRICE+'P**. \n\n Are you sure you wish to do this?',
+		description: 'You are adding the emoji `:'+emojiName+':` to the server. \n\n This will cost you **'+price()+'P**. \n\n Are you sure you wish to do this?',
 		thumbnail: {url: 'attachment://emoji.png'},
 		author: {name: ':'+emojiName+':'},
 	};
@@ -107,13 +107,13 @@ async function confirmAddEmoji(interaction) {
 
 		//checks
 		await updateEmojiArchiveToLatest();
-		await checkIfUserCanAfford(interaction.user.id, PRICE);
+		await checkIfUserCanAfford(interaction.user.id, price());
 		await checkIfEmojiIsInArchive(emojiPath);
 		await checkIfEmojiExistsOnServer(interaction.guild, emojiName);
 		await checkIfServerHasFreeEmojiSlots(interaction.guild);
 
 		//make it happen
-		await takeUsersMoney(interaction.user.id, PRICE);
+		await takeUsersMoney(interaction.user.id, price());
 		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
 		await interaction.update({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully added! ', embeds: [], components: [], attachments: []});

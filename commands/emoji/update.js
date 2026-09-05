@@ -9,7 +9,7 @@ import { scalePng } from '../../util/scale-png.js';
 const OUTPUT_PATH = '_emoji-archive';
 
 await EMOJI_DATA.assert('updateEmojiPrice');
-const PRICE = EMOJI_DATA.get('updateEmojiPrice');
+const price = () => EMOJI_DATA.get('updateEmojiPrice');
 
 const confirmationActionRow = {
 	type: 1,
@@ -37,7 +37,7 @@ export default async (interaction) => {
 
     try {
         await updateEmojiArchiveToLatest();
-        await checkIfUserCanAfford(interaction.user.id, PRICE);
+        await checkIfUserCanAfford(interaction.user.id, price());
         await checkIfEmojiIsInArchive(emojiPath);
         await ensureEmojiExistsOnServer(interaction.guild, emojiName);
         await checkIfEmojiIsRemovable(emojiName);
@@ -53,7 +53,7 @@ export default async (interaction) => {
 
     const embed = {
         title: 'Confirm Purchase',
-        description: 'You are updating the emoji '+currentEmojiTag+' (`:'+emojiName+':`) on the server. Please ensure the emoji is not already updated to the latest version. \n\n This will cost you **'+PRICE+'P**. \n\n Are you sure you wish to do this?',
+        description: 'You are updating the emoji '+currentEmojiTag+' (`:'+emojiName+':`) on the server. Please ensure the emoji is not already updated to the latest version. \n\n This will cost you **'+price()+'P**. \n\n Are you sure you wish to do this?',
         thumbnail: {url: 'attachment://emoji.png'},
         author: {name: ':'+emojiName+':'},
     };
@@ -87,13 +87,13 @@ async function confirmUpdateEmoji(interaction) {
 
         //checks
         await updateEmojiArchiveToLatest();
-        await checkIfUserCanAfford(interaction.user.id, PRICE);
+        await checkIfUserCanAfford(interaction.user.id, price());
         await checkIfEmojiIsInArchive(emojiPath);
         await ensureEmojiExistsOnServer(interaction.guild, emojiName);
         await checkIfEmojiIsRemovable(emojiName);
 
         //make it happen
-        await takeUsersMoney(interaction.user.id, PRICE);
+        await takeUsersMoney(interaction.user.id, price());
         await removeEmojiFromServer(interaction, emojiName);
         let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 

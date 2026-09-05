@@ -4,6 +4,10 @@ await client.connect();
 
 let db = client.db(process.env.DATABASE_NAME || 'LospecBotV4');
 
+//exported so modules that need real collections (rather than the key/value
+//document store below) can share this connection - see util/lft-store.js
+export const database = db;
+
 //check if the collection exists and create it if not
 let collections = await db.listCollections().toArray();
 if (!collections.find(c => c.name == 'data')) await db.createCollection('data');
@@ -33,13 +37,18 @@ class Data {
 
 	get(key) {
 		console.log('Getting', this.slug, key);
-		return this.store[key];
+		return this.store?.[key];
 	}
 
+	//returns the write so callers that care can await it and report failures
 	set(key, value) {
 		console.log('Setting', this.slug, key, 'to', value);
 		this.store[key] = value;
-		collection.updateOne({name: this.slug}, {$set: {[key]: value}});
+		return collection.updateOne({name: this.slug}, {$set: {[key]: value}});
+	}
+
+	keys() {
+		return Object.keys(this.store || {}).filter(key => key !== '_id' && key !== 'name');
 	}
 
 	async assert(...args) {

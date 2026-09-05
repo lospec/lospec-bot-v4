@@ -4,7 +4,7 @@ import { getEmojiOnServer, removeEmojiFromServer, checkIfEmojiIsRemovable } from
 import { EMOJI_DATA } from '../../data.js';
 
 await EMOJI_DATA.assert('removeEmojiPrice');
-const PRICE = EMOJI_DATA.get('removeEmojiPrice'); 
+const price = () => EMOJI_DATA.get('removeEmojiPrice');
 
 const confirmationActionRow = {
 	type: 1,
@@ -31,7 +31,7 @@ export default async (interaction) => {
     
 
 	try {
-		await checkIfUserCanAfford(interaction.user.id, PRICE);
+		await checkIfUserCanAfford(interaction.user.id, price());
 		await checkIfEmojiIsRemovable(emojiName);
 		emoji = await getEmojiOnServer(interaction.guild, emojiName);
 	}
@@ -43,7 +43,7 @@ export default async (interaction) => {
 
 	const embed = {
 		title: 'Confirm Purchase',
-		description: 'You are removing the emoji `:'+emojiName+':` from the server. \n\n This will cost you **'+PRICE+'P**. \n\n Are you sure you wish to do this?',
+		description: 'You are removing the emoji `:'+emojiName+':` from the server. \n\n This will cost you **'+price()+'P**. \n\n Are you sure you wish to do this?',
 		thumbnail: {url: 'https://cdn.discordapp.com/emojis/'+emoji.id+'.png'},
 		author: {name: ':'+emojiName+':'},
 	};
@@ -70,12 +70,12 @@ async function confirmRemoveEmoji(interaction) {
 			console.log('removing emoji:',emojiName);
 
 		//checks
-		await checkIfUserCanAfford(interaction.user.id, PRICE);
+		await checkIfUserCanAfford(interaction.user.id, price());
 		await getEmojiOnServer(interaction.guild, emojiName);
 		await checkIfEmojiIsRemovable(emojiName);
 
 		//make it happen
-		await takeUsersMoney(interaction.user.id, PRICE);
+		await takeUsersMoney(interaction.user.id, price());
 		await removeEmojiFromServer(interaction, emojiName);
 		
 		interaction.update({content: "The `:"+emojiName+":` emoji has been successfully removed from the server. You monster.", embeds: [], components: [], attachments: []});

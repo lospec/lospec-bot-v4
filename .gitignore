@@ -4,3 +4,6 @@ node_modules
 _cache
 _emoji-archive
 .vscode
+_data
+_lft-test
+dev-scripts
