@@ -56,6 +56,32 @@ Please note, if you update these files manually by editing them, you must reboot
 
 To run the bot, run the command `npm start` from the command line from the project root. 
 
+# Configuration
+
+Everything the bot needs to be told — channel ids, prices, timings — lives in
+the data stores rather than in code, and admins can read and change all of it
+from discord with `/config`. The command is restricted to administrators, and
+does not show up at all for anybody else.
+
+| Command | |
+| --- | --- |
+| `/config list <store>` | everything in a store, with its current value |
+| `/config get <store> <key>` | one value, in full |
+| `/config set <store> <key> <value>` | change a value, or add a new one |
+| `/config clear <store> <key>` | empty a value, as though it had never been set |
+
+`/config set` guesses the type of what you type: `16` is stored as a number,
+`true` as a boolean, `[1,2]` and `{"a":1}` as JSON, and anything else as text.
+Long runs of digits are always kept as text, because discord ids are too big
+for a javascript number to hold reliably. Use the `type` option to say
+explicitly which you meant.
+
+Changes take effect immediately — the stores are held in memory and the command
+updates that copy as well as the database, so there is nothing to restart. That
+is only true for changes made *through the command*: editing the database
+directly still needs a reboot, because the bot will otherwise overwrite your
+edit from memory the next time it writes.
+
 # Dev
 
 How to expand the bot with new functionality.
@@ -110,4 +136,5 @@ Modules that use a lot of properties should be set up with their own data store,
 
 - **.get(** `<string>` key **)** - Get the value associated with the provided key
 - **.set(** `<string>` key, `<any>` value **)** - Set the value of the provided key to the provided value
+- **.keys()** - List the names of every value in the data store
 - **.assert(** `<string>` key, `<bool>` required *[optional]* **)** (async) - Ensure a value exists in the data store, and if not, create a blank value and throw an error (unless required is set to false). Must be awaited. This gives the developer a place to enter the value manually. This should only be used in the top level of a file, so commands will not be loaded if the assertion fails.
