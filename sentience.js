@@ -2,8 +2,8 @@
 //
 // Every so often it says one of the lines from phrases.txt, in one channel.
 // The gap between sayings is the configured average give or take 50%, so it
-// never falls into a rhythm, and it keeps quiet if one of its phrases is
-// still sitting in the recent history of the channel.
+// never falls into a rhythm, and it keeps quiet if it has spoken - or anybody
+// has quoted one of its phrases - in the recent history of the channel.
 
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -101,7 +101,10 @@ async function recentMessages (channel) {
 
 	return [...fetched.values()]
 		.sort((a, b) => b.createdTimestamp - a.createdTimestamp)
-		.map(message => normalize(message.content));
+		.map(message => ({
+			content: normalize(message.content),
+			mine: Boolean(client.user) && message.author?.id === client.user.id,
+		}));
 }
 
 
@@ -121,16 +124,20 @@ async function saySomething () {
 	const history = await recentMessages(channel);
 	const spoken = new Set(phrases.map(normalize));
 
-	//anybody repeating a phrase counts, not just the bot - the point is that
-	//the channel has seen it recently, whoever it came from
-	if (history.slice(0, HISTORY_DEPTH).some(content => spoken.has(content))) {
-		console.log('A phrase is still in the last', HISTORY_DEPTH, 'messages - keeping quiet');
+	//its own posts count whatever they say, rather than only when they still
+	//match a line in phrases.txt - rewording a phrase must not make the copy it
+	//already posted invisible. anybody else repeating a phrase counts too, since
+	//the channel has seen it either way
+	const blocking = history.slice(0, HISTORY_DEPTH).find(message => message.mine || spoken.has(message.content));
+
+	if (blocking) {
+		console.log((blocking.mine ? 'It spoke' : 'Somebody else said one of its phrases') + ' within the last ' + HISTORY_DEPTH + ' messages - keeping quiet');
 		return;
 	}
 
 	//anything said lately is off the table. the history half of this survives a
 	//restart, which is the half the in-memory list cannot do
-	const avoid = new Set([...history, ...recentlySaid.map(normalize)]);
+	const avoid = new Set([...history.map(message => message.content), ...recentlySaid.map(normalize)]);
 	const pool = phrases.filter(phrase => !avoid.has(normalize(phrase)));
 
 	//a phrases.txt short enough to have run out still gets to say something
