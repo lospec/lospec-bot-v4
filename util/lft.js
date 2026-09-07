@@ -160,14 +160,6 @@ export function counterfeitMessage (original) {
 
 // ----------------------------------------------------------------- misc
 
-const locks = new Map();
-
-// Runs fn while nothing else holds the same key. Bidding and settling both
-// read a balance before writing, and the store must not change underneath
-// them while that request is in flight.
-export function withLock (key, fn) {
-	const previous = locks.get(key) || Promise.resolve();
-	const result = previous.then(fn, fn);
-	locks.set(key, result.then(() => {}, () => {}));
-	return result;
-}
+//it lives in its own module now that auctions of every kind lean on it, and is
+//re-exported here because this is where everything already imports it from
+export { withLock } from './lock.js';

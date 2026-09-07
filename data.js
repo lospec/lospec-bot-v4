@@ -10,6 +10,7 @@ export const YON_CONFIG = new Data('yon-config');
 export const EMOJI_DATA = new Data('emoji-data');
 export const DEXELAR_DATA = new Data('dexelar-data');
 export const LFT_DATA = new Data('lft-data');
+export const AUCTION_DATA = new Data('auction-data');
 export var Data;
 
 //every store, by slug - used by /config to list and edit them from discord
@@ -20,6 +21,7 @@ export const STORES = {
 	'emoji-data': EMOJI_DATA,
 	'dexelar-data': DEXELAR_DATA,
 	'lft-data': LFT_DATA,
+	'auction-data': AUCTION_DATA,
 };
 
 export default true;

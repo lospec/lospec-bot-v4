@@ -101,6 +101,96 @@ by the next run instead, and reported when it comes back up.
 permission. It relies on something outside the bot bringing the process back:
 pm2, systemd, docker, whatever is running it.
 
+# Auctions
+
+Anything the bot can hold and hand over can be auctioned. An auction is posted
+as an embed with a **Place Bid** button, runs for a few days, and then charges
+the winner and pays the seller. Bids are only checked against your balance when
+you make them - the winner pays at the end, and if they cannot, it falls to the
+next highest bidder.
+
+The bidding, the money, the messages and the timers live in `util/auctions.js`
+and are the same for every kind. What is actually being sold is a handler
+module per kind, listed in `TYPE_MODULES` at the top of that file:
+
+| Kind | Handler | What is sold |
+| --- | --- | --- |
+| `lft` | `util/auction-lft.js` | a Lospec Funky Thingy, out of your inventory |
+| `role` | `util/auction-role.js` | a discord role, off your account |
+| `custom` | `util/auction-custom.js` | whatever a user says it is |
+
+To add another kind, write a module with a default export implementing as much
+of the handler contract as it needs - documented above `TYPE_MODULES` - and add
+it to that list. Nothing else has to change.
+
+An auction is run from its own post: **Place Bid** is on it, and that is the
+whole of it. Once something is up it cannot be called off - it runs its course
+and either sells or comes back. There is nothing to list either, because the
+auctions are the posts in the thread.
+
+Commands only exist where there is no post to put a button on:
+
+| Command | |
+| --- | --- |
+| `/auction` | auction something of your own, from your post in the auction forum |
+| `/role auction` | put a role you have up for auction |
+| `/role give` | hand a role straight to somebody, free |
+| `/role list` | the tradeable roles, and who has them |
+| `/role tradeable` | admin: say whether a role can be traded at all |
+| `/lft auction` | put one of your LFTs up in the marketplace |
+
+## Role auctions
+
+Only roles a moderator has marked tradeable can be bought and sold, and each of
+them belongs to one person at a time. Putting one up takes it off you
+immediately and gives it to whoever wins; if nobody bids, you get it back.
+
+```
+/role tradeable role:@Cool Person tradeable:True
+```
+
+The bot needs the Manage Roles permission, and one of its own roles has to sit
+above the role in the list, or it cannot hand it out - `/role tradeable` says so
+rather than accepting a role it cannot move. Roles discord manages itself, like
+the booster role or a bot's own role, can never be traded.
+
+A tradeable role that nobody holds goes up for auction by the treasury at one
+pikzel. That covers the role of somebody who leaves the server - which the bot
+notices as they go - as well as one that has just been marked tradeable, or one
+whose owner left while the bot was down. The last of those is found by a sweep
+that runs every half hour, because working out who holds a role means asking
+discord for the whole member list.
+
+## User run auctions
+
+Anybody can auction anything they like from a post they started in the auction
+forum:
+
+```
+/auction title:A commission starting_bid:50
+```
+
+The bot only handles the pikzels: it takes the bids, charges the winner and pays
+the seller. **Sending whatever was sold is between the two of them** - the bot
+says so on the auction and in the thread when it closes. How many auctions one
+person may have running at once is `customMaxOpenPerUser`.
+
+## Setting them up
+
+| Store | Key | |
+| --- | --- | --- |
+| `lft-data` | `marketplaceThreadId` | the thread LFT auctions are posted in |
+| `auction-data` | `roleAuctionThreadId` | the thread role auctions are posted in |
+| `auction-data` | `customAuctionForumId` | the forum users may auction from, or a list of them |
+| `auction-data` | `tradeableRoles` | which roles can be traded - set by `/role tradeable`, not by hand |
+
+Auctions of a kind whose thread has not been set up are simply never posted, so
+each kind can be turned on by itself. The rest of `auction-data` - how long
+bidding runs for, minimum bids, how many auctions one person may have going,
+whether unheld roles are relisted, how often to sweep - is listed with its
+defaults at the top of `util/auction-config.js`, and every value can be changed
+with `/config set store:auction-data`.
+
 # Dev
 
 How to expand the bot with new functionality.

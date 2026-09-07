@@ -1,4 +1,4 @@
-// Storage for LFTs, user inventories and auctions.
+// Storage for LFTs, user inventories and auctions of every kind.
 //
 // The Data class in data.js is a key/value document per module, which is fine
 // for a handful of settings but not for thousands of LFTs and inventory rows.
@@ -25,6 +25,8 @@ let backend;
 if (process.env.MONGO_URI) backend = await createDatabaseBackend();
 else if (process.env.LOCAL_DATA_STORAGE) backend = await createLocalBackend();
 else throw new Error('Data storage not configured, please see the "Data Storage" section under README.md');
+
+memory.auctions.forEach(normalizeAuction);
 
 console.log('Loaded LFT store:', memory.lfts.length, 'lfts,', memory.inventory.length, 'inventory rows,', memory.auctions.length, 'auctions');
 
@@ -180,22 +182,50 @@ export async function removeFromInventory (userId, lftNumber, quantity = 1) {
 
 // ------------------------------------------------------------ auctions
 
+// Auctions from before there was more than one kind of them say neither what
+// kind they are nor what they are for - they are all LFT auctions, and are read
+// as though they said so. lftNumber is kept up to date alongside itemId so that
+// anything still looking for it finds what it expects.
+function normalizeAuction (auction) {
+	if (!auction.kind) auction.kind = 'lft';
+
+	if (auction.itemId === undefined || auction.itemId === null)
+		auction.itemId = auction.lftNumber === undefined || auction.lftNumber === null ? null : String(auction.lftNumber);
+
+	if (auction.kind === 'lft' && auction.itemId !== null) auction.lftNumber = Number(auction.itemId);
+
+	return auction;
+}
+
 export function getAllAuctions () {
 	return memory.auctions;
 }
 
 export function getAuction (id) {
-	return memory.auctions.find(auction => auction.id === id);
+	return memory.auctions.find(auction => auction.id === String(id));
 }
 
 export function getOpenAuctions () {
 	return memory.auctions.filter(auction => auction.status === 'open');
 }
 
+//every auction there has ever been for one particular thing, settled or not
+export function getAuctionsForItem (kind, itemId) {
+	return memory.auctions.filter(auction => auction.kind === kind && auction.itemId === String(itemId));
+}
+
+export function getOpenAuctionForItem (kind, itemId) {
+	return memory.auctions.find(auction => auction.status === 'open' && auction.kind === kind && auction.itemId === String(itemId));
+}
+
 export function getOpenAuctionForLft (lftNumber) {
-	return memory.auctions.find(auction => auction.status === 'open' && auction.lftNumber === Number(lftNumber));
+	return getOpenAuctionForItem('lft', lftNumber);
+}
+
+export function getOpenAuctionsBySeller (userId) {
+	return memory.auctions.filter(auction => auction.status === 'open' && auction.sellerId === userId);
 }
 
 export async function saveAuction (auction) {
-	return put('auctions', auction);
+	return put('auctions', normalizeAuction(auction));
 }
