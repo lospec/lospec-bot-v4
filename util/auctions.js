@@ -487,7 +487,7 @@ async function refund (auction, handler, bid) {
 		await giveUserMoney(bid.userId, bid.amount);
 		await dm(bid.userId, {
 			content: 'Your winning bid of **' + bid.amount + 'P** on ' + label
-				+ ' has been refunded, because it could not be handed over to you. Sorry about that.',
+				+ ' has been refunded, because it could not be handed over to you.',
 		});
 	}
 	catch (err) {

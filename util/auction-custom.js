@@ -44,7 +44,7 @@ export function openAuctionsBy (userId) {
 
 export default {
 	kind: 'custom',
-	wonText: 'The seller has been paid, and will hand it over themselves.',
+	wonText: 'The seller has been paid and will send it to you.',
 
 	prepare (auction) {
 		if (!auction.sellerId) throw new Error('A user auction has to have somebody selling it.');
@@ -66,7 +66,7 @@ export default {
 	},
 
 	introText (auction) {
-		return '<@' + auction.sellerId + '> is auctioning something!';
+		return '<@' + auction.sellerId + '> has put something up for auction.';
 	},
 
 	embedTitle (auction) {
@@ -74,7 +74,7 @@ export default {
 	},
 
 	embedDescription (auction) {
-		return auction.details || 'Up for auction!';
+		return auction.details || 'Up for auction.';
 	},
 
 	closedDescription (auction, resultText) {
@@ -92,7 +92,7 @@ export default {
 	extraFields () {
 		return [{
 			name: 'Handover',
-			value: 'The bot handles the pikzels. The seller sends what was sold themselves.',
+			value: 'The bot takes the money. The seller sends what was sold.',
 		}];
 	},
 
@@ -107,8 +107,8 @@ export default {
 		try {
 			const thread = await client.channels.fetch(auction.channelId);
 			await thread.send({
-				content: '<@' + auction.sellerId + '> has been paid **' + bid.amount + 'P** - over to you to send '
-					+ '<@' + bid.userId + '> the goods.',
+				content: '<@' + auction.sellerId + '> has been paid **' + bid.amount + 'P**. '
+					+ 'Send <@' + bid.userId + '> what they bought.',
 			});
 		}
 		catch (err) {

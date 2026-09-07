@@ -71,6 +71,11 @@ export async function unmarkTradeable (roleId) {
 	const auction = openAuctionForRole(roleId);
 	if (auction) throw new Error('That role is up for auction right now (#' + auction.id + '), so it cannot be taken off the list until that has finished.');
 
+	await dropTradeableRole(roleId);
+}
+
+
+async function dropTradeableRole (roleId) {
 	await AUCTION_DATA.set('tradeableRoles', tradeableRoles().filter(entry => String(entry.roleId) !== String(roleId)));
 }
 
@@ -187,8 +192,8 @@ export default {
 
 	introText (auction) {
 		return auction.sellerId
-			? '<@' + auction.sellerId + '> has put a role up for auction!'
-			: 'A role has come free and is going under the hammer!';
+			? '<@' + auction.sellerId + '> has put a role up for auction.'
+			: 'This role has no owner, so it is up for auction.';
 	},
 
 	embedTitle (auction) {
@@ -197,7 +202,7 @@ export default {
 
 	//mentions inside an embed render without pinging anybody
 	embedDescription (auction) {
-		return '<@&' + auction.itemId + '> is up for auction! Whoever wins it gets the role, and nobody else has it.';
+		return '<@&' + auction.itemId + '> is up for auction. One person has this role at a time.';
 	},
 
 	closedDescription (auction, resultText) {
@@ -317,10 +322,22 @@ export async function sweepForFreeRoles (force = false) {
 
 
 async function checkRoleIsHeld (guild, entry) {
-	if (openAuctionForRole(entry.roleId)) return;
+	//not caught: a role that could not be looked up because discord was having a
+	//moment must not be mistaken for one that has been deleted
+	const role = await guild.roles.fetch(String(entry.roleId));
 
-	const role = await guild.roles.fetch(String(entry.roleId)).catch(() => null);
-	if (!role) return console.warn('Tradeable role', entry.roleId, 'no longer exists in', guild.name);
+	// A deleted role is never coming back, so it comes off the list rather than
+	// being warned about every half hour forever. Nobody can take it off by hand
+	// either, because a deleted role cannot be picked in `/role tradeable`.
+	//
+	// Any auction still open for it is left alone - it settles on its own, finds
+	// nothing to hand over, and refunds anybody who bid.
+	if (!role) {
+		console.warn('Tradeable role', entry.name, entry.roleId, 'no longer exists in', guild.name, '- dropping it from the list');
+		return await dropTradeableRole(entry.roleId);
+	}
+
+	if (openAuctionForRole(entry.roleId)) return;
 
 	if (role.members.size > 1)
 		return console.warn('Tradeable role', role.name, 'is worn by', role.members.size, 'people - it should be one');

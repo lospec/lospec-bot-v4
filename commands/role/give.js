@@ -13,7 +13,7 @@ export default async (interaction) => {
 	if (!isTradeable(role.id))
 		return interaction.editReply({content: role.toString() + ' is not a tradeable role. `/role list` shows the ones that are.'});
 
-	if (recipient.bot) return interaction.editReply({content: 'Bots have no use for roles.'});
+	if (recipient.bot) return interaction.editReply({content: 'You cannot give a role to a bot.'});
 	if (recipient.id === interaction.user.id) return interaction.editReply({content: 'You already have that one.'});
 
 	if (!interaction.member.roles.cache.has(role.id))
@@ -48,7 +48,7 @@ export default async (interaction) => {
 		embeds: [{
 			title: 'You were given a role!',
 			description: interaction.user.toString() + ' gave you the **@' + role.name + '** role in **' + interaction.guild.name + '**. '
-				+ 'It is yours until you auction it off or hand it on.',
+				+ 'It is yours until you auction it off or give it away.',
 			color: SOLD_COLOR,
 		}],
 	});
