@@ -2,7 +2,10 @@
 // collection only offer the ones you actually own.
 import * as store from '../util/lft-store.js';
 
-const OWNED_ONLY = ['auction', 'give'];
+const OWNED_ONLY = ['auction', 'give', 'post'];
+//an LFT at auction is still in its owner's inventory, but it cannot be
+//auctioned again or given away until the auction settles
+const NOT_AT_AUCTION = ['auction', 'give'];
 
 export default async function lftAutocomplete (interaction) {
 	const focused = interaction.options.getFocused().toLowerCase().replace(/^#/, '');
@@ -14,8 +17,7 @@ export default async function lftAutocomplete (interaction) {
 		lfts = store.getInventory(interaction.user.id)
 			.map(row => store.getLftByNumber(row.lftNumber))
 			.filter(Boolean)
-			//one that is already at auction cannot be auctioned or given away
-			.filter(lft => !store.getOpenAuctionForLft(lft.number));
+			.filter(lft => !NOT_AT_AUCTION.includes(subcommand) || !store.getOpenAuctionForLft(lft.number));
 	}
 	else lfts = store.getAllLfts();
 

@@ -31,6 +31,20 @@ export const config = {
 			],
 		},
 		{
+			name: 'post',
+			description: 'Post one of your LFTs, as just the emoji',
+			type: ApplicationCommandOptionType.Subcommand,
+			options: [
+				{
+					name: 'lft',
+					description: 'Which of your LFTs to post',
+					type: ApplicationCommandOptionType.String,
+					required: true,
+					autocomplete: true,
+				},
+			],
+		},
+		{
 			name: 'auction',
 			description: 'Put one of your LFTs up for auction in the marketplace',
 			type: ApplicationCommandOptionType.Subcommand,
