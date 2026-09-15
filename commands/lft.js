@@ -9,6 +9,14 @@ export const config = {
 			name: 'inventory',
 			description: 'See the LFTs you own',
 			type: ApplicationCommandOptionType.Subcommand,
+			options: [
+				{
+					name: 'public',
+					description: 'Post your collection publicly instead of just for you (default: false)',
+					type: ApplicationCommandOptionType.Boolean,
+					required: false,
+				},
+			],
 		},
 		{
 			name: 'info',

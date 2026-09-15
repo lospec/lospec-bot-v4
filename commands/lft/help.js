@@ -29,8 +29,9 @@ export default async (interaction) => {
 				},
 				{
 					name: 'Your collection',
-					value: '`/lft inventory` shows everything you own, and `/lft info` looks up any LFT ever made. '
-						+ '`/lft post` posts one you own as just the emoji.',
+					value: '`/lft inventory` shows everything you own — only to you unless you set `public` to '
+						+ 'true, which posts it in the channel for everyone. `/lft info` looks up any LFT ever made, '
+						+ 'and `/lft post` posts one you own as just the emoji.',
 				},
 				{
 					name: 'Selling and trading',

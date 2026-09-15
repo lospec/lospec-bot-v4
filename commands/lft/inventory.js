@@ -11,8 +11,12 @@ import { emojiTag } from '../../util/lft-emoji.js';
 
 const CONTENT_LIMIT = 2000;
 
+// Posted publicly, the message carries no name of its own - the "used
+// /lft inventory" header discord puts above a command reply is what says
+// whose collection it is.
 export default async (interaction) => {
-	await interaction.deferReply({ephemeral: true});
+	const isPublic = interaction.options.getBoolean('public') || false;
+	await interaction.deferReply({ephemeral: !isPublic});
 	await interaction.editReply(buildPage(interaction.user.id, 0));
 };
 
@@ -24,11 +28,10 @@ client.on('interactionCreate', async interaction => {
 	if (!interaction.customId.startsWith('lft_inv_')) return;
 
 	try {
+		//the owner is in the button id, not the clicker, so a public post pages
+		//for anyone who can see it - a button that only its owner could press
+		//would sit there rejecting everybody else
 		const [, , userId, page] = interaction.customId.split('_');
-		//the message is only ever shown to its owner, but there is no reason to
-		//rebuild somebody else's collection if that ever changes
-		if (userId !== interaction.user.id) return interaction.deferUpdate();
-
 		await interaction.update(buildPage(userId, Number(page)));
 	}
 	catch (err) {
