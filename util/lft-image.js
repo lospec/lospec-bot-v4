@@ -1,22 +1,18 @@
 // Validation and processing for LFT artwork.
 //
-// An LFT must be a square pixel art png of 8, 16, 32 or 64 pixels using no
-// more than 16 colours. It gets scaled up to 64x64 with nearest neighbour so
-// it stays crisp as a discord emoji.
+// An LFT must be a 128x128 pixel art png using no more than 16 colours. That
+// is the size discord stores custom emoji at, so the art is uploaded as it is
+// and nothing gets resampled on either end.
 
 import { PNG } from 'pngjs';
 import crypto from 'crypto';
-import { scalePngData } from './scale-png.js';
 
-export const ALLOWED_SIZES = [8, 16, 32, 64];
-export const EMOJI_SIZE = 64;
+export const ART_SIZE = 128;
 export const MAX_COLORS = 16;
 
-
-//"8, 16, 32 or 64"
-export function listSizes () {
-	return ALLOWED_SIZES.slice(0, -1).join(', ') + ' or ' + ALLOWED_SIZES[ALLOWED_SIZES.length - 1];
-}
+//the fingerprint is taken at the 64x64 LFTs used to be minted at, so the hashes
+//already stored on those still match art that is re-uploaded at 128
+export const HASH_SIZE = 64;
 
 
 //reads the png and enforces the LFT art rules, returning the parsed image
@@ -28,11 +24,8 @@ export function readAndValidateImage (buffer) {
 		throw new Error('That file could not be read as a png image.');
 	}
 
-	if (png.width !== png.height)
-		throw new Error('LFT artwork must be square, but yours is '+png.width+'x'+png.height+'.');
-
-	if (!ALLOWED_SIZES.includes(png.width))
-		throw new Error('LFT artwork must be '+listSizes()+' pixels, but yours is '+png.width+'x'+png.height+'.');
+	if (png.width !== ART_SIZE || png.height !== ART_SIZE)
+		throw new Error('LFT artwork must be '+ART_SIZE+'x'+ART_SIZE+' pixels, but yours is '+png.width+'x'+png.height+'.');
 
 	const colors = countColors(png);
 	if (colors > MAX_COLORS)
@@ -56,25 +49,23 @@ export function countColors (png) {
 }
 
 
-//scales the art up to the 64x64 png that becomes the emoji
-export async function renderEmojiImage (png) {
-	if (png.width === EMOJI_SIZE) return PNG.sync.write(png);
-	return await scalePngData(png, EMOJI_SIZE / png.width);
+//re-encodes the art as the png that becomes the emoji, dropping any metadata
+export function renderEmojiImage (png) {
+	return PNG.sync.write(png);
 }
 
 
 // Fingerprints the artwork so counterfeits can be detected. The hash is taken
-// from the pixels at 64x64 with transparent pixels flattened, so re-uploading
-// the same art at a different size or with different colors hidden under full
-// transparency still matches the original.
+// from the pixels sampled down to 64x64 with transparent pixels flattened, so
+// re-uploading the same art at a different size or with different colors hidden
+// under full transparency still matches the original.
 export function hashImage (png) {
-	const scale = EMOJI_SIZE / png.width;
-	const pixels = Buffer.alloc(EMOJI_SIZE * EMOJI_SIZE * 4);
+	const pixels = Buffer.alloc(HASH_SIZE * HASH_SIZE * 4);
 
-	for (let y = 0; y < EMOJI_SIZE; y++) {
-		for (let x = 0; x < EMOJI_SIZE; x++) {
-			const source = (png.width * Math.floor(y/scale) + Math.floor(x/scale)) << 2;
-			const target = (EMOJI_SIZE * y + x) << 2;
+	for (let y = 0; y < HASH_SIZE; y++) {
+		for (let x = 0; x < HASH_SIZE; x++) {
+			const source = (png.width * Math.floor(y * png.height / HASH_SIZE) + Math.floor(x * png.width / HASH_SIZE)) << 2;
+			const target = (HASH_SIZE * y + x) << 2;
 			const alpha = png.data[source+3];
 
 			pixels[target] = alpha === 0 ? 0 : png.data[source];

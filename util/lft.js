@@ -1,6 +1,6 @@
 // Lospec Funky Thingies - the collectable itself.
 //
-// An LFT is a unique 64x64 pixel art emoji with a unique name and number.
+// An LFT is a unique 128x128 pixel art emoji with a unique name and number.
 // Users mint them for pikzels, keep them in an inventory, and pass them
 // around by auction or by gift.
 
@@ -115,7 +115,7 @@ export async function mintLft ({name, title, ownerId, creatorId, imageBuffer, or
 	else if (store.getLftByNumber(number))
 		throw new Error('LFT #' + number + ' already exists, so this one cannot be minted with that number.');
 
-	const emojiImage = await renderEmojiImage(png);
+	const emojiImage = renderEmojiImage(png);
 	const emojiName = emojiNameFor(number, name);
 	const emoji = await createApplicationEmoji(emojiName, emojiImage);
 

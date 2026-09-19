@@ -9,6 +9,7 @@
 import fsp from 'fs/promises';
 import path from 'path';
 import { LFT_DATA } from '../data.js';
+import * as store from './lft-store.js';
 import { normalizeName, titleFromName } from './lft.js';
 
 export const SEED_PATH = 'lft-seed';
@@ -61,7 +62,7 @@ export async function readSeedImage (file) {
 // coming up next simply gets claimed by the file named for it, if there is one,
 // and otherwise goes to one of the unnumbered pieces at random.
 export function pickNextSeed (seeds, nextNumber) {
-	const waiting = seeds.filter(seed => !isSeedUsed(seed.file));
+	const waiting = seeds.filter(seed => !isSeedReleased(seed));
 	if (!waiting.length) return null;
 
 	const claimed = waiting.find(seed => seed.number === nextNumber);
@@ -82,6 +83,14 @@ function usedSeeds () {
 
 export function isSeedUsed (file) {
 	return usedSeeds().includes(file);
+}
+
+// A seed is spent once its file has been released, and just as much once an
+// LFT carries its name - the release is tracked by filename, so a file that is
+// renamed after its release (the opening run lost its number prefixes) would
+// otherwise come round again.
+export function isSeedReleased (seed) {
+	return isSeedUsed(seed.file) || Boolean(store.getLftByName(seed.name));
 }
 
 //marked before the auction is posted, so a crash can never release the same

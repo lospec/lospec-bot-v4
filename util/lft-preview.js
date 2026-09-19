@@ -8,26 +8,23 @@
 import { PNG } from 'pngjs';
 import { scalePngData } from './scale-png.js';
 import { lftConfig } from './lft.js';
-import { EMOJI_SIZE } from './lft-image.js';
 
 const cache = new Map();
 const CACHE_LIMIT = 200;
 
 
-//the emoji is 64x64, so the preview is always a whole multiple of that
-function previewScale () {
-	const size = Number(lftConfig('previewSize')) || 256;
-	return Math.max(1, Math.round(size / EMOJI_SIZE));
+function previewSize () {
+	return Number(lftConfig('previewSize')) || 256;
 }
 
 
 export async function renderPreview (lft) {
-	const scale = previewScale();
-	const key = lft.number + '@' + scale;
+	const size = previewSize();
+	const key = lft.number + '@' + size;
 
 	if (cache.has(key)) return cache.get(key);
 
-	const buffer = await renderPreviewAtScale(lft, scale);
+	const buffer = await renderPreviewAtSize(lft, size);
 
 	if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value);
 	cache.set(key, buffer);
@@ -36,9 +33,14 @@ export async function renderPreview (lft) {
 }
 
 
-async function renderPreviewAtScale (lft, scale) {
-	const source = PNG.sync.read(Buffer.from(lft.image, 'base64'));
-	if (scale <= 1) return Buffer.from(lft.image, 'base64');
+//the preview is always a whole multiple of the stored image so the pixels stay
+//square. the scale comes from the image itself rather than from ART_SIZE
+//because LFTs minted before the move to 128x128 are stored at 64x64
+async function renderPreviewAtSize (lft, size) {
+	const original = Buffer.from(lft.image, 'base64');
+	const source = PNG.sync.read(original);
+	const scale = Math.max(1, Math.round(size / source.width));
+	if (scale <= 1) return original;
 	return await scalePngData(source, scale);
 }
 

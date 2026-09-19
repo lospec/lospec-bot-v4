@@ -122,35 +122,26 @@ export async function runSeedAuction () {
 
 	console.log('releasing LFT seed', next.file, 'as #' + (next.number ?? nextNumber));
 
-	let lft = store.getLftByName(next.name);
+	let lft;
 
-	//somebody may already own an LFT under this name, in which case the
-	//treasury has nothing to sell and the seed is a dud
-	if (lft && !store.getInventoryRow(houseId(), lft.number)) {
-		console.error('LFT seed', next.file, 'clashes with LFT #' + lft.number + ', which the treasury does not own - skipping it');
+	try {
+		lft = await mintLft({
+			name: next.name,
+			title: next.title,
+			ownerId: houseId(),
+			creatorId: null,
+			imageBuffer: await readSeedImage(next.file),
+			origin: 'seed',
+			number: next.number ?? nextNumber,
+		});
+	}
+	catch (err) {
+		//a seed that cannot be minted (duplicate art, wrong size, a name or
+		//number already taken) must not block the rest of the series, so
+		//retire it
+		console.error('LFT seed', next.file, 'could not be minted:', err.message);
 		await markSeedUsed(next.file);
 		return;
-	}
-
-	if (!lft) {
-		try {
-			lft = await mintLft({
-				name: next.name,
-				title: next.title,
-				ownerId: houseId(),
-				creatorId: null,
-				imageBuffer: await readSeedImage(next.file),
-				origin: 'seed',
-				number: next.number ?? nextNumber,
-			});
-		}
-		catch (err) {
-			//a seed that cannot be minted (duplicate art, wrong size, a number
-			//already taken) must not block the rest of the series, so retire it
-			console.error('LFT seed', next.file, 'could not be minted:', err.message);
-			await markSeedUsed(next.file);
-			return;
-		}
 	}
 
 	//marked before the auction is posted so a crash cannot release it twice
