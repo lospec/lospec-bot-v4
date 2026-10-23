@@ -18,6 +18,8 @@ import {
 } from '@discordjs/voice';
 import { PermissionFlagsBits } from 'discord.js';
 import { spawn } from 'child_process';
+import dgram from 'dgram';
+import crypto from 'crypto';
 import ffmpegPath from 'ffmpeg-static';
 import client from '../client.js';
 import { STATIONS, listSongs, loadLibrary, readSong, levelOf, measureSong, onLibraryChange, watchLibrary, code } from './music-library.js';
@@ -32,6 +34,29 @@ const sessions = new Map();
 
 loadLibrary();
 watchLibrary(LIBRARY_REFRESH);
+checkUdp();
+
+// Voice audio goes over UDP, and some hosts block it, in which case every
+// connection stalls while "connecting" with no error. This asks a public STUN
+// server for our address over UDP at startup, so the log says outright whether
+// UDP gets out and back.
+function checkUdp () {
+	const socket = dgram.createSocket('udp4');
+	const request = Buffer.alloc(20);
+	request.writeUInt16BE(0x0001, 0);
+	request.writeUInt32BE(0x2112a442, 4);
+	crypto.randomBytes(12).copy(request, 8);
+
+	const finish = result => {
+		clearTimeout(timer);
+		console.log('Voice UDP check (node ' + process.version + '):', result);
+		socket.close();
+	};
+	const timer = setTimeout(() => finish('FAILED - no reply over UDP, so voice connections cannot work from this host'), 5000);
+	socket.on('message', () => finish('ok'));
+	socket.on('error', err => finish('FAILED - ' + err.message));
+	socket.send(request, 19302, 'stun.l.google.com');
+}
 
 // New songs are slotted into the current shuffle at random, so they come up
 // within this pass through the station rather than after it. Removed ones are
@@ -103,6 +128,9 @@ export async function join (voiceChannel, station, song) {
 				if (from.status !== to.status) console.log('voice connection:', from.status, '->', to.status);
 			});
 			connection.on('error', err => console.error('voice connection error:', err.message));
+			connection.on('debug', message => {
+				if (connection.state.status !== VoiceConnectionStatus.Ready) console.log('voice debug:', message);
+			});
 			connection.on(VoiceConnectionStatus.Disconnected, async () => {
 				// being dragged to another channel disconnects briefly and then reconnects
 				try {
