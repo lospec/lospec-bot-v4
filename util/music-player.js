@@ -16,6 +16,7 @@ import {
 	joinVoiceChannel, createAudioPlayer, createAudioResource, entersState,
 	AudioPlayerStatus, VoiceConnectionStatus, StreamType, NoSubscriberBehavior,
 } from '@discordjs/voice';
+import { PermissionFlagsBits } from 'discord.js';
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import client from '../client.js';
@@ -81,6 +82,13 @@ export async function join (voiceChannel, station, song) {
 	if (song) session.queue.push(song);
 
 	if (session.connection?.joinConfig.channelId !== voiceChannel.id) {
+		const permissions = voiceChannel.permissionsFor(voiceChannel.guild.members.me);
+		const missing = ['ViewChannel', 'Connect', 'Speak'].filter(permission => !permissions?.has(PermissionFlagsBits[permission]));
+		if (missing.length) {
+			if (!session.connection) leave(session.guildId);
+			throw new Error('The bot needs the ' + missing.join(', ') + ' permission' + (missing.length > 1 ? 's' : '') + ' in ' + voiceChannel.toString() + '.');
+		}
+
 		const connection = joinVoiceChannel({
 			channelId: voiceChannel.id,
 			guildId: voiceChannel.guild.id,
@@ -91,6 +99,10 @@ export async function join (voiceChannel, station, song) {
 		if (connection !== session.connection) {
 			session.connection = connection;
 			connection.subscribe(session.player);
+			connection.on('stateChange', (from, to) => {
+				if (from.status !== to.status) console.log('voice connection:', from.status, '->', to.status);
+			});
+			connection.on('error', err => console.error('voice connection error:', err.message));
 			connection.on(VoiceConnectionStatus.Disconnected, async () => {
 				// being dragged to another channel disconnects briefly and then reconnects
 				try {
@@ -105,8 +117,12 @@ export async function join (voiceChannel, station, song) {
 
 		try { await entersState(connection, VoiceConnectionStatus.Ready, CONNECT_TIMEOUT); }
 		catch (err) {
+			// stuck signalling means discord never sent the voice server to use;
+			// stuck connecting means it did, but the voice connection itself failed
+			const status = connection.state.status;
+			console.error('voice connection to', voiceChannel.name, 'timed out while', status);
 			leave(session.guildId);
-			throw new Error('Could not connect to ' + voiceChannel.toString() + '.');
+			throw new Error('Could not connect to ' + voiceChannel.toString() + ' (stopped at ' + status + ').');
 		}
 	}
 
