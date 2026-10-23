@@ -16,8 +16,18 @@ const RENDER_RATE = 48000;
 const RENDER_CHUNK = 8192;
 const MAX_RENDER_SECONDS = 20 * 60;
 
-// What everything is levelled to, in LUFS
+// What everything is levelled to, in LUFS as measured through LISTENING_WEIGHT
 const TARGET_LOUDNESS = -16;
+
+// Plain LUFS counts bass nearly in full, which suits loud listening on good
+// speakers. In a voice channel - background volume, headphones and laptop
+// speakers - bass sounds far quieter than it measures and the 1-5kHz range
+// louder, so a bassy song levelled by LUFS alone sounds much quieter than a
+// bright square-wave one. Loudness is measured through this to make up for it.
+const LISTENING_WEIGHT = 'highpass=f=150:poles=2,highpass=f=150:poles=2,equalizer=f=3000:t=o:w=2:g=6';
+
+// Bumped whenever the measurement changes, so older measurements are redone
+export const LEVEL_VERSION = 2;
 // A quiet song is only turned up until its peaks would need this much limiting
 const MAX_LIMITING = 3;
 
@@ -49,13 +59,21 @@ export async function toMp3 (name, buffer) {
 }
 
 // Integrated loudness (LUFS) and true peak (dBTP) of a song
+// Loudness is measured through LISTENING_WEIGHT, but the true peak on the
+// song as it is, since that is what the limiter has to keep from clipping
 export async function measure (buffer) {
-	const {stderr} = await run(['-nostats', '-i', 'pipe:0', '-af', 'ebur128=peak=true:framelog=quiet', '-f', 'null', '-'], buffer);
-	const summary = stderr.slice(stderr.lastIndexOf('Summary:'));
-	const loudness = Number(summary.match(/I:\s+(-?[\d.]+|-inf) LUFS/)?.[1]);
-	const peak = Number(summary.match(/Peak:\s+(-?[\d.]+|-inf) dBFS/)?.[1]);
+	const {stderr} = await run(['-nostats', '-i', 'pipe:0', '-filter_complex',
+		'asplit=2[full][weighted];'
+		+ '[full]ebur128=peak=true:framelog=quiet[out];'
+		+ '[weighted]' + LISTENING_WEIGHT + ',ebur128=framelog=quiet,anullsink',
+		'-map', '[out]', '-f', 'null', '-'], buffer);
+	let loudness, peak;
+	for (const summary of stderr.split('Summary:').slice(1)) {
+		if (/Peak:/.test(summary)) peak = Number(summary.match(/Peak:\s+(-?[\d.]+|-inf) dBFS/)?.[1]);
+		else loudness = Number(summary.match(/I:\s+(-?[\d.]+|-inf) LUFS/)?.[1]);
+	}
 	if (!Number.isFinite(loudness) || !Number.isFinite(peak)) throw new Error('Could not measure the loudness of this song.');
-	return {loudness, peak};
+	return {loudness, peak, version: LEVEL_VERSION};
 }
 
 // The ffmpeg filter that brings a measured song to the target loudness

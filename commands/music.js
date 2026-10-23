@@ -56,6 +56,20 @@ export const config = {
 			],
 		},
 		{
+			name: 'list',
+			description: 'Get a file listing every song on a station',
+			type: ApplicationCommandOptionType.Subcommand,
+			options: [
+				{
+					name: 'station',
+					description: 'Which station to list (default: all of them)',
+					type: ApplicationCommandOptionType.String,
+					required: false,
+					choices: Object.entries(STATIONS).map(([value, name]) => ({name, value})),
+				},
+			],
+		},
+		{
 			name: 'queue',
 			description: 'Show what is playing and the songs requested after it',
 			type: ApplicationCommandOptionType.Subcommand,

@@ -18,7 +18,7 @@ import { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, 
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { toMp3, measure, isSupported, extensionOf } from './music-audio.js';
+import { toMp3, measure, isSupported, extensionOf, LEVEL_VERSION } from './music-audio.js';
 import { withLock } from './lock.js';
 
 export const STATIONS = {
@@ -189,7 +189,7 @@ export function searchSongs (text) {
 
 // How loud a song is, if it has been measured
 export function levelOf (song) {
-	return levels[song.id] || null;
+	return currentLevel(song.id);
 }
 
 // The song's whole file
@@ -202,7 +202,7 @@ export async function readSong (song) {
 
 // Measures a song that has not been measured yet, from its file
 export async function measureSong (song, buffer) {
-	if (levels[song.id]) return levels[song.id];
+	if (currentLevel(song.id)) return currentLevel(song.id);
 	const level = await measure(buffer || await readSong(song));
 	await saveLevel(song.id, level);
 	return level;
@@ -297,7 +297,7 @@ async function measureMissingLevels () {
 	let measured = 0;
 	try {
 		let missing;
-		while ((missing = listSongs().filter(song => !levels[song.id] && !unmeasurable.has(song.id))).length) {
+		while ((missing = listSongs().filter(song => !currentLevel(song.id) && !unmeasurable.has(song.id))).length) {
 			console.log('Measuring the loudness of', missing.length, 'songs...');
 			for (const song of missing) {
 				try {
@@ -313,6 +313,11 @@ async function measureMissingLevels () {
 		if (measured) console.log('Finished measuring song loudness');
 	}
 	finally { measuring = false; }
+}
+
+// A measurement taken the way songs are measured now, or nothing
+function currentLevel (id) {
+	return levels[id]?.version === LEVEL_VERSION ? levels[id] : null;
 }
 
 // A file name as inline code, for discord messages

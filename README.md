@@ -202,6 +202,7 @@ The bot plays songs into a voice channel from two stations, Chill and Upbeat.
 | `/music skip` | skip the song that is playing |
 | `/music station <station>` | switch to another station |
 | `/music queue` | what is playing, and the songs requested after it |
+| `/music list [station]` | a text file of every song on a station (default: all of them) |
 | `/music stop` | stop playing and leave the voice channel |
 | `/music-upload <song> <station>` | add a song to a station |
 | `/music-delete <song>` | remove a song from its station for good |
