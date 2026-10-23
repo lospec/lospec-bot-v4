@@ -191,6 +191,63 @@ whether unheld roles are relisted, how often to sweep - is listed with its
 defaults at the top of `util/auction-config.js`, and every value can be changed
 with `/config set store:auction-data`.
 
+# Music
+
+The bot plays songs into a voice channel from two stations, Chill and Upbeat.
+
+| Command | |
+| --- | --- |
+| `/music join [station]` | bring the bot into your voice channel, playing a station (default: Chill) |
+| `/music play <song>` | queue a song; requested songs play before the station carries on |
+| `/music skip` | skip the song that is playing |
+| `/music station <station>` | switch to another station |
+| `/music queue` | what is playing, and the songs requested after it |
+| `/music stop` | stop playing and leave the voice channel |
+| `/music-upload <song> <station>` | add a song to a station |
+| `/music-delete <song>` | remove a song from its station for good |
+
+Each song is announced in the voice channel's chat as it starts, and that chat
+is the only place the music posts anything publicly - commands used elsewhere
+get a reply only the person using them can see. The bot leaves a minute after
+the last person does.
+
+Songs can also be added from a message with files attached: right click it,
+then Apps > **Add to Chill station** or **Add to Upbeat station**. Every song on
+the message is added.
+
+`/music-upload`, `/music-delete` and the two Apps commands are only visible to
+administrators until they are given to other roles or members under Server
+Settings > Integrations > Lospec Bot - each one is granted separately.
+
+## Formats and volume
+
+Songs are stored as mp3s. Other audio files (ogg, wav, flac, m4a and so on) are
+converted with ffmpeg when they are added, and tracker modules (mod, xm, s3m,
+it and the rest libopenmpt reads) are rendered with the WebAssembly build of
+libopenmpt from the `chiptune3` package. Anything already on either station is
+rejected, compared after conversion.
+
+Every song's loudness is measured once and saved in `levels.json` next to the
+stations, and the player turns each song up or down to the same loudness as it
+plays, so the files themselves are never re-encoded. Quiet songs with loud
+peaks are only turned up as far as a limiter can keep them from clipping. Songs
+without a measurement - from before this existed, or put on the CDN by hand -
+are measured in the background when the bot starts.
+
+## Where songs are kept
+
+With `SPACES_KEY` and `SPACES_SECRET` in the .env, songs are kept on the CDN
+under `music/<station>/` in the `lospec` bucket, so they are not part of the
+repo and survive redeploys. The bot lists them when it starts. Without those,
+songs are read from `./_music/<station>/` instead.
+
+To add a whole folder of songs at once:
+
+	node scripts/upload-music.js <chill|upbeat> <folder>
+
+The voice connection uses `@discordjs/voice`, and audio is converted with the
+ffmpeg binary that `ffmpeg-static` downloads on `npm install`.
+
 # Dev
 
 How to expand the bot with new functionality.
