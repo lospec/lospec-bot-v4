@@ -1,11 +1,13 @@
 import { AttachmentBuilder } from 'discord.js';
-import { STATIONS, listSongs, loadLibrary } from '../../util/music-library.js';
+import { STATIONS, listSongs, loadLibrary, findStation } from '../../util/music-library.js';
 
 // Sent as a file because a station is far longer than a message can hold, and
 // discord shows a text file as a small preview that opens to scroll through
 export default async (interaction) => {
 	await loadLibrary();
-	const picked = interaction.options.getString('station');
+	const typed = interaction.options.getString('station');
+	const picked = findStation(typed);
+	if (typed && !picked) return interaction.reply({content: 'Pick a station from the suggestions.', ephemeral: true});
 	const stations = picked ? [picked] : Object.keys(STATIONS);
 
 	const sections = stations.map(station => {

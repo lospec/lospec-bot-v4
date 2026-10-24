@@ -1,5 +1,4 @@
 import { ApplicationCommandType, ApplicationCommandOptionType } from 'discord.js';
-import { STATIONS } from '../util/music-library.js';
 import '../util/music-player.js';
 
 export const config = {
@@ -18,7 +17,7 @@ export const config = {
 					description: 'Which station to play (default: chill)',
 					type: ApplicationCommandOptionType.String,
 					required: false,
-					choices: Object.entries(STATIONS).map(([value, name]) => ({name, value})),
+					autocomplete: true,
 				},
 			],
 		},
@@ -51,7 +50,7 @@ export const config = {
 					description: 'Which station to play',
 					type: ApplicationCommandOptionType.String,
 					required: true,
-					choices: Object.entries(STATIONS).map(([value, name]) => ({name, value})),
+					autocomplete: true,
 				},
 			],
 		},
@@ -65,7 +64,7 @@ export const config = {
 					description: 'Which station to list (default: all of them)',
 					type: ApplicationCommandOptionType.String,
 					required: false,
-					choices: Object.entries(STATIONS).map(([value, name]) => ({name, value})),
+					autocomplete: true,
 				},
 			],
 		},

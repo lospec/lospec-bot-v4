@@ -1,5 +1,5 @@
 import { ApplicationCommandType, ApplicationCommandOptionType } from 'discord.js';
-import { STATIONS } from '../util/music-library.js';
+import { findStation } from '../util/music-library.js';
 import { UPLOAD_PERMISSION, addAttachments } from '../util/music-upload.js';
 
 export const config = {
@@ -20,12 +20,15 @@ export const config = {
 			description: 'Which station to add it to',
 			type: ApplicationCommandOptionType.String,
 			required: true,
-			choices: Object.entries(STATIONS).map(([value, name]) => ({name, value})),
+			autocomplete: true,
 		},
 	],
 };
 
 export const execute = async (interaction) => {
+	const station = findStation(interaction.options.getString('station'));
+	if (!station) return interaction.reply({content: 'Pick a station from the suggestions.', ephemeral: true});
+
 	await interaction.deferReply({ephemeral: true});
-	await addAttachments(interaction, interaction.options.getString('station'), [interaction.options.getAttachment('song')]);
+	await addAttachments(interaction, station, [interaction.options.getAttachment('song')]);
 };

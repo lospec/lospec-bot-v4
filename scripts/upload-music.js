@@ -11,13 +11,13 @@ import path from 'path';
 import { STATIONS, addSong, loadLibrary } from '../util/music-library.js';
 import { isSupported } from '../util/music-audio.js';
 
+await loadLibrary();
+
 const [station, folder] = process.argv.slice(2);
 if (!STATIONS[station] || !folder) {
 	console.error('usage: node scripts/upload-music.js <' + Object.keys(STATIONS).join('|') + '> <folder>');
 	process.exit(1);
 }
-
-await loadLibrary();
 
 const files = fs.readdirSync(folder).filter(isSupported);
 let added = 0;

@@ -193,7 +193,8 @@ with `/config set store:auction-data`.
 
 # Music
 
-The bot plays songs into a voice channel from two stations, Chill and Upbeat.
+The bot plays songs into a voice channel from stations - Chill and Upbeat, and
+any others made with `/music-create-station`.
 
 | Command | |
 | --- | --- |
@@ -206,6 +207,8 @@ The bot plays songs into a voice channel from two stations, Chill and Upbeat.
 | `/music stop` | stop playing and leave the voice channel |
 | `/music-upload <song> <station>` | add a song to a station |
 | `/music-delete <song>` | remove a song from its station for good |
+| `/music-move <song> <station>` | move a song to another station |
+| `/music-create-station <name>` | make a new, empty station |
 
 Each song is announced in the voice channel's chat as it starts, and that chat
 is the only place the music posts anything publicly - commands used elsewhere
@@ -213,12 +216,17 @@ get a reply only the person using them can see. The bot leaves a minute after
 the last person does.
 
 Songs can also be added from a message with files attached: right click it,
-then Apps > **Add to Chill station** or **Add to Upbeat station**. Every song on
-the message is added.
+then Apps > **Add to music station**, and pick the station. Every song on the
+message is added.
 
-`/music-upload`, `/music-delete` and the two Apps commands are only visible to
-administrators until they are given to other roles or members under Server
-Settings > Integrations > Lospec Bot - each one is granted separately.
+`/music-upload`, `/music-delete`, `/music-move`, `/music-create-station` and the
+Apps command are only visible to administrators until they are given to other
+roles or members under Server Settings > Integrations > Lospec Bot - each one
+is granted separately.
+
+Stations other than Chill and Upbeat are listed in `stations.json` beside the
+songs, and every station option autocompletes, so a new station can be used
+straight away without restarting the bot. There can be up to 25.
 
 ## Formats and volume
 

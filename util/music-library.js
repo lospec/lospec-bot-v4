@@ -14,22 +14,27 @@
 // without a measurement (put there by hand, or from before levels existed) are
 // measured in the background after the library loads.
 
-import { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { toMp3, measure, isSupported, extensionOf, LEVEL_VERSION } from './music-audio.js';
 import { withLock } from './lock.js';
 
+// slug -> name. The two original stations always exist, and any made with
+// createStation are kept in stations.json beside them. Filled in by reading the
+// library, and changed in place so everything holding it sees new stations.
 export const STATIONS = {
 	chill: 'Chill',
 	upbeat: 'Upbeat',
 };
+export const MAX_STATIONS = 25;
 
 const SPACES_ENDPOINT = 'https://nyc3.digitaloceanspaces.com';
 const SPACES_BUCKET = 'lospec';
 const SPACES_PREFIX = 'music/';
 const LEVELS_FILE = 'levels.json';
+const STATIONS_FILE = 'stations.json';
 const CDN_URL = 'https://cdn.lospec.com/';
 const LOCAL_FOLDER = '_music';
 
@@ -81,8 +86,10 @@ function refreshLibrary () {
 }
 
 async function readLibrary () {
-	const read = useSpaces ? await readFromSpaces() : readFromFolder();
-	levels = {...levels, ...read.levels};
+	Object.assign(STATIONS, await readStations());
+	for (const station of Object.keys(STATIONS)) library[station] ||= [];
+	const read = useSpaces ? await readFromSpaces() : await readFromFolder();
+	levels = mergeLevels(levels, read.levels);
 
 	const added = [], removed = [];
 	for (const station of Object.keys(STATIONS)) {
@@ -134,7 +141,7 @@ async function readFromSpaces () {
 	return {songs, levels: await readLevels()};
 }
 
-function readFromFolder () {
+async function readFromFolder () {
 	const songs = {};
 	for (const station of Object.keys(STATIONS)) {
 		const folder = path.join(LOCAL_FOLDER, station);
@@ -147,28 +154,54 @@ function readFromFolder () {
 			})
 			.sort(byName);
 	}
-	return {songs, levels: readLevelsFromFolder()};
+	return {songs, levels: await readLevels()};
+}
+
+async function readStations () {
+	return JSON.parse(await readFile(STATIONS_FILE) || '{}');
 }
 
 async function readLevels () {
-	if (!useSpaces) return readLevelsFromFolder();
+	return JSON.parse(await readFile(LEVELS_FILE) || '{}');
+}
+
+// A file kept beside the stations, or nothing if there isn't one
+async function readFile (name) {
+	if (!useSpaces) {
+		try { return fs.readFileSync(path.join(LOCAL_FOLDER, name), 'utf8'); }
+		catch (err) { return null; }
+	}
 	try {
-		const file = await s3.send(new GetObjectCommand({Bucket: SPACES_BUCKET, Key: SPACES_PREFIX + LEVELS_FILE}));
-		return JSON.parse(await file.Body.transformToString());
+		const file = await s3.send(new GetObjectCommand({Bucket: SPACES_BUCKET, Key: SPACES_PREFIX + name}));
+		return await file.Body.transformToString();
 	}
 	catch (err) {
-		if (err.name !== 'NoSuchKey') console.error('Failed to load music levels:', err.message);
-		return {};
+		if (err.name !== 'NoSuchKey') console.error('Failed to read music ' + name + ':', err.message);
+		return null;
 	}
 }
 
-function readLevelsFromFolder () {
-	try { return JSON.parse(fs.readFileSync(path.join(LOCAL_FOLDER, LEVELS_FILE), 'utf8')); }
-	catch (err) { return {}; }
+async function writeFile (name, body) {
+	if (useSpaces) await s3.send(new PutObjectCommand({
+		Bucket: SPACES_BUCKET,
+		Key: SPACES_PREFIX + name,
+		Body: body,
+		ContentType: 'application/json',
+	}));
+	else {
+		fs.mkdirSync(LOCAL_FOLDER, {recursive: true});
+		fs.writeFileSync(path.join(LOCAL_FOLDER, name), body);
+	}
 }
 
 function spacesSong (station, name, id) {
 	return {id, name, station, source: CDN_URL + SPACES_PREFIX + station + '/' + encodeURIComponent(name)};
+}
+
+// The station someone picked or typed - its slug or its name - or null
+export function findStation (text) {
+	const wanted = String(text || '').trim().toLowerCase();
+	return Object.keys(STATIONS).find(slug => slug === wanted || STATIONS[slug].toLowerCase() === wanted) || null;
 }
 
 export function listSongs (station) {
@@ -266,26 +299,82 @@ export async function removeSong (song) {
 	notify([], [song]);
 }
 
+// Makes a new, empty station. Returns its slug.
+export async function createStation (name) {
+	await loadLibrary();
+	name = String(name).replace(/\s+/g, ' ').trim();
+	const slug = name.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+	if (!slug || name.length > 40) throw new Error('Station names must be 1 to 40 characters, with at least one letter or number.');
+
+	return withLock('music-stations', async () => {
+		const saved = await readStations();
+		Object.assign(STATIONS, saved);
+		if (STATIONS[slug] || Object.values(STATIONS).some(other => other.toLowerCase() === name.toLowerCase()))
+			throw new Error('There is already a station called ' + (STATIONS[slug] || name) + '.');
+		if (Object.keys(STATIONS).length >= MAX_STATIONS) throw new Error('There can be at most ' + MAX_STATIONS + ' stations.');
+
+		saved[slug] = name;
+		await writeFile(STATIONS_FILE, JSON.stringify(saved, null, '\t'));
+		STATIONS[slug] = name;
+		library[slug] ||= [];
+		if (!useSpaces) fs.mkdirSync(path.join(LOCAL_FOLDER, slug), {recursive: true});
+		return slug;
+	});
+}
+
+// Moves a song to another station, keeping its name and loudness
+export async function moveSong (song, station) {
+	await loadLibrary();
+	if (!STATIONS[station]) throw new Error('There is no station called "' + station + '".');
+	if (song.station === station) throw new Error(code(song.name) + ' is already on the ' + STATIONS[station] + ' station.');
+	if (library[station].some(other => other.name.toLowerCase() === song.name.toLowerCase()))
+		throw new Error('The ' + STATIONS[station] + ' station already has a song called ' + code(song.name) + '.');
+
+	let moved;
+	if (useSpaces) {
+		const from = SPACES_PREFIX + song.station + '/' + song.name;
+		await s3.send(new CopyObjectCommand({
+			Bucket: SPACES_BUCKET,
+			CopySource: SPACES_BUCKET + '/' + from.split('/').map(encodeURIComponent).join('/'),
+			Key: SPACES_PREFIX + station + '/' + song.name,
+			ACL: 'public-read',
+			ContentType: 'audio/mpeg',
+			MetadataDirective: 'REPLACE',
+		}));
+		await s3.send(new DeleteObjectCommand({Bucket: SPACES_BUCKET, Key: from}));
+		moved = spacesSong(station, song.name, song.id);
+	}
+	else {
+		const file = path.join(LOCAL_FOLDER, station, song.name);
+		fs.mkdirSync(path.dirname(file), {recursive: true});
+		fs.renameSync(song.source, file);
+		moved = {id: song.id, name: song.name, station, source: path.resolve(file)};
+	}
+
+	library[song.station] = library[song.station].filter(other => other !== song);
+	library[station].push(moved);
+	library[station].sort(byName);
+	notify([moved], [song]);
+	return moved;
+}
+
 function saveLevel (id, level) {
 	return withLock('music-levels', async () => {
 		//merged with what is saved, so measurements written by something else
 		//since this last read them aren't lost
-		levels = {...await readLevels(), ...levels};
+		levels = mergeLevels(await readLevels(), levels);
 		if (level) levels[id] = level;
 		else delete levels[id];
-
-		const body = JSON.stringify(levels, null, '\t');
-		if (useSpaces) await s3.send(new PutObjectCommand({
-			Bucket: SPACES_BUCKET,
-			Key: SPACES_PREFIX + LEVELS_FILE,
-			Body: body,
-			ContentType: 'application/json',
-		}));
-		else {
-			fs.mkdirSync(LOCAL_FOLDER, {recursive: true});
-			fs.writeFileSync(path.join(LOCAL_FOLDER, LEVELS_FILE), body);
-		}
+		await writeFile(LEVELS_FILE, JSON.stringify(levels, null, '\t'));
 	});
+}
+
+// Both sets of measurements, keeping whichever of each was measured the newer way
+function mergeLevels (a, b) {
+	const merged = {...a};
+	for (const [id, level] of Object.entries(b))
+		if (!merged[id] || (level?.version || 1) >= (merged[id].version || 1)) merged[id] = level;
+	return merged;
 }
 
 // One at a time, so it never competes with playback for long
