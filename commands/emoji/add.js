@@ -57,6 +57,7 @@ const confirmationActionRow = {
 };
 
 export default async (interaction) => {
+	await interaction.deferReply({ephemeral: true});
 	const emojiName = interaction.options.getString('emoji');
 	const emojiPath = path.join(OUTPUT_PATH,'current',emojiName+'.png');
 	let emojiImageScaled;
@@ -72,7 +73,7 @@ export default async (interaction) => {
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
-		await interaction.reply({content: "Failed to add emoji. " + err.message, ephemeral: true});
+		await interaction.editReply({content: "Failed to add emoji. " + err.message});
 		return;
 	}
 
@@ -83,11 +84,10 @@ export default async (interaction) => {
 		author: {name: ':'+emojiName+':'},
 	};
 
-	await interaction.reply({
+	await interaction.editReply({
 		files: [new AttachmentBuilder(emojiImageScaled, {name: 'emoji.png'})],
 		embeds: [embed],
 		components: [confirmationActionRow],
-		ephemeral: true
 	});
 };
 
@@ -96,11 +96,12 @@ client.on('interactionCreate', async interaction => {
 	if (interaction.customId === 'add_emoji_confirm') 
 		confirmAddEmoji(interaction);
 	else if (interaction.customId === 'cancel') 
-		interaction.update({content: 'Add emoji request cancelled.', embeds: [], components: [], attachments: []});
+		interaction.update({content: 'Add emoji request cancelled.', embeds: [], components: [], attachments: []}).catch(err => console.error('could not answer the cancel button:', err.message));
 });
 
 async function confirmAddEmoji(interaction) {
 	try {
+		await interaction.deferUpdate();
 		const emojiName = interaction.message.embeds[0].author.name.replace(/:/g,'');
 			console.log('adding emoji:',emojiName);
 		const emojiPath = path.join(OUTPUT_PATH,'current',emojiName+'.png');
@@ -116,7 +117,7 @@ async function confirmAddEmoji(interaction) {
 		await takeUsersMoney(interaction.user.id, price());
 		let emojiTag = await addEmojiToServer(interaction, emojiPath, emojiName);
 
-		await interaction.update({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully added! ', embeds: [], components: [], attachments: []});
+		await interaction.editReply({content: 'The emoji '+emojiTag+' `:'+emojiName+':` has been successfully added! ', embeds: [], components: [], attachments: []});
 
 		//send announcement to emoji changes channel
 		const announcementChannel = await client.channels.fetch(EMOJI_DATA.get('emojiChangesAnnouncementsChannelId'));
@@ -124,7 +125,7 @@ async function confirmAddEmoji(interaction) {
 	}
 	catch (err) {
 		console.log('add emoji request failed:',err);
-		await interaction.update({content: "Failed to add emoji. " + err.message, embeds: [], components: [], attachments: []});
+		await interaction.editReply({content: "Failed to add emoji. " + err.message, embeds: [], components: [], attachments: []}).catch(err => console.error('could not show the emoji error:', err.message));
 		return;
 	}
 }
