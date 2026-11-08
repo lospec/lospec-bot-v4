@@ -41,6 +41,7 @@ const SHORT_SONG = 60;       // only songs shorter than this (intro + one loop) 
 const LOOPS = 3;             // ...up to this many times...
 const LOOP_LIMIT = 150;      // ...while that stays within 2:30
 const MAX_SECONDS = 420;     // cap on intro + loops
+const NATURAL_LIMIT = 300;   // cap on a song with no loop found
 const ANALYSE_SECONDS = 480; // how much is rendered to find the loop
 const RATE = 8000;           // analysis sample rate
 const HOP = 160;             // analysis frames of 20ms
@@ -103,7 +104,15 @@ export async function renderChip (file, track = 0) {
 		const gain = (-1 - peak).toFixed(2) + 'dB';
 		const mp3Args = ['-vn', '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', '-f', 'mp3', 'pipe:1'];
 		let args;
-		if (natural) args = ['-i', wav, '-af', 'volume=' + gain, ...mp3Args];
+		if (natural) {
+			// chiptune.app's own length, except a song that never ends (a module jumping back to its
+			// start forever plays to chip2mp3's 20 minute cap) is cut at NATURAL_LIMIT and faded
+			const length = (fs.statSync(wav).size - 44) / (44100 * 4);
+			args = length > NATURAL_LIMIT + FADE
+				? ['-i', wav, '-t', String(NATURAL_LIMIT + FADE), '-af', 'volume=' + gain + ',afade=t=out:st=' + NATURAL_LIMIT + ':d=' + FADE, ...mp3Args]
+				: ['-i', wav, '-af', 'volume=' + gain, ...mp3Args];
+			if (length > NATURAL_LIMIT + FADE) how += ', cut at ' + NATURAL_LIMIT + 's';
+		}
 		else {
 			seconds = Math.min(seconds, MAX_SECONDS);
 			args = ['-i', wav, '-t', (seconds + FADE).toFixed(2), '-af', 'volume=' + gain + ',afade=t=out:st=' + seconds.toFixed(2) + ':d=' + FADE, ...mp3Args];

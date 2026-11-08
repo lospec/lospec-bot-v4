@@ -16,7 +16,7 @@ import client from '../client.js';
 import { STATIONS, MAX_SONG_BYTES, addSong, loadLibrary, code } from './music-library.js';
 import { isSupported, extensionOf } from './music-audio.js';
 import { SIDECAR_EXTENSIONS } from './chip-render.js';
-import { parseLink, downloadLink, nameFor } from './chiptune-links.js';
+import { parseLink, downloadLink, nameFor, songMeta } from './chiptune-links.js';
 
 export const UPLOAD_PERMISSION = String(PermissionFlagsBits.Administrator);
 
@@ -73,7 +73,7 @@ export async function addLink (interaction, station, text, {track, name} = {}) {
 	const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'music-link-'));
 	try {
 		const {file, path: catalogPath, track: picked} = await downloadLink(link, folder);
-		const fileName = (name || nameFor(catalogPath, picked)) + path.extname(file);
+		const fileName = (name || nameFor(catalogPath, picked, songMeta(file, fs.readFileSync(file), picked))) + path.extname(file);
 		const song = await addSong(station, fileName, fs.readFileSync(file), {file, track: picked});
 		await interaction.editReply('Added ' + code(song.name) + ' to the ' + STATIONS[station] + ' station.');
 	}

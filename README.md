@@ -251,6 +251,11 @@ it is looked up in an index of hashed collections kept privately on Spaces under
 `music/chiptune-ids/` (put there with `node scripts/upload-chiptune-ids.js <folder>`);
 a song that isn't indexed needs its gifx.co link instead.
 
+A linked song is named from what the file says about itself, the same header
+fields chiptune.app reads (`util/song-meta.js`): its title and game, or its title
+and artist - for tracker modules, the artist credited in the instrument and
+sample names - falling back to the file's path. `name` overrides it.
+
 chip2mp3's repository is private, so the bot downloads its build from Spaces
 (`music/bin/chip2mp3-<version>/`, uploaded with `node scripts/upload-chip2mp3.js <folder>`)
 into `_bin` the first time it is needed, along with HVSC's `Songlengths.md5` for SID

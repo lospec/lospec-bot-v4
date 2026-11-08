@@ -14,6 +14,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { readStored, listStored } from './music-storage.js';
+export { songMeta } from './song-meta.js';
 
 const GIFX = 'https://gifx.co/music/';
 const INDEX = path.resolve('_bin', 'chiptune-ids');
@@ -71,9 +72,12 @@ export async function downloadLink (link, folder) {
 }
 
 // A song name for a catalog path, before slugging: the track's title and the
-// game, or the artist and title for collections arranged by artist. Tracks
-// after the first get their number, so they don't take the first one's name.
-export function nameFor (catalogPath, track = 0) {
+// game, or the artist and title for collections arranged by artist. `meta` is
+// what the file says about itself (song-meta.js), used before the path when it
+// names the song - a keygen module's file is named after the keygen, but its
+// header and samples name the actual song and musician. Tracks after the first
+// get their number, so they don't take the first one's name.
+export function nameFor (catalogPath, track = 0, meta = {}) {
 	const parts = catalogPath.split('/');
 	const ext = path.posix.extname(catalogPath).slice(1).toLowerCase();
 	const stem = parts.at(-1).slice(0, -(ext.length + 1) || undefined);
@@ -83,13 +87,21 @@ export function nameFor (catalogPath, track = 0) {
 	const numbered = name => track > 0 ? name + ' track ' + (track + 1) : name;
 	const mentions = (text, words) => text.toLowerCase().replace(/[^a-z0-9]/g, '').includes(words.toLowerCase().replace(/[^a-z0-9]/g, ''));
 
-	// one file holding a whole soundtrack (nsf, gbs...) is named after the game, so the track goes in the name
-	if (WHOLE_SOUNDTRACK.includes(ext) || !title) return clean(stem) + ' track ' + (track + 1);
-	// HVSC: MUSICIANS/<letter>/<artist>/[...]<song>
+	// HVSC: MUSICIANS/<letter>/<artist>/[...]<song>; the folder is the musician's handle
 	if (parts[0] === 'High Voltage SID Collection') {
 		const artist = parts[1] === 'MUSICIANS' && parts.length > 4 ? parts[3] : folder;
 		return numbered(clean(artist) + ' ' + title);
 	}
+	// the file's own tags: a track title (and its game), or a title and who made it
+	const whole = WHOLE_SOUNDTRACK.includes(ext);
+	if (meta.title && meta.game) return (whole && ext !== 'nsfe' ? numbered : name => name)(meta.title + ' ' + meta.game);
+	if (meta.title && !whole) {
+		// a module that credits nobody: in collections arranged by artist, the folder is the artist
+		const artist = meta.artist || (BY_ARTIST.includes(parts[0]) && folder ? clean(folder) : null);
+		return numbered(artist && !mentions(meta.title, artist) ? artist + ' ' + meta.title : meta.title);
+	}
+	// one file holding a whole soundtrack (nsf, gbs...) is named after the game, so the track goes in the name
+	if (whole || !title) return (meta.game || clean(stem)) + ' track ' + (track + 1);
 	// competitions: the song's own name already says who made it ("Artist - Title")
 	if (COMPETITIONS.includes(parts[0])) return numbered(title);
 	// collections arranged by artist: the folder is the artist
