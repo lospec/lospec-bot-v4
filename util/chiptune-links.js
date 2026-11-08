@@ -18,6 +18,10 @@ import { readStored, listStored } from './music-storage.js';
 const GIFX = 'https://gifx.co/music/';
 const INDEX = path.resolve('_bin', 'chiptune-ids');
 const INDEX_REFRESH = 6 * 3600 * 1000;
+// chiptune.app collections arranged by artist, and competition archives
+// (from chip-player-js server/directory-metadata.js)
+const BY_ARTIST = ['Contemporary', 'ModArchives', 'keygenmusic.org', 'The Module Collection', 'Modland', 'Farbrausch V2', 'OPLArchive'];
+const COMPETITIONS = ['Battle of the Bits', 'Famicompo', 'Famicompo (NSFE)'];
 // formats where one file holds a game's whole soundtrack
 const WHOLE_SOUNDTRACK = ['nsf', 'nsfe', 'gbs', 'hes', 'kss', 'ay', 'sap'];
 
@@ -67,19 +71,32 @@ export async function downloadLink (link, folder) {
 }
 
 // A song name for a catalog path, before slugging: the track's title and the
-// game, or the artist and title for collections arranged by artist
+// game, or the artist and title for collections arranged by artist. Tracks
+// after the first get their number, so they don't take the first one's name.
 export function nameFor (catalogPath, track = 0) {
 	const parts = catalogPath.split('/');
-	const stem = parts.at(-1).replace(/\.[^.]+$/, '');
+	const ext = path.posix.extname(catalogPath).slice(1).toLowerCase();
+	const stem = parts.at(-1).slice(0, -(ext.length + 1) || undefined);
 	const folder = parts.length > 2 ? parts.at(-2) : '';
 	const clean = text => text.replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/_/g, ' ').trim();
-	const title = clean(stem).replace(/^\d+[a-z]?(\s*[-.]\s*|\s+)/i, '');
-	if (parts[0] === 'High Voltage SID Collection') return folder + ' ' + title;
+	const title = clean(stem).replace(/^(BotB\s+)?\d+[a-z]?(\s*[-.]\s*|\s+)/i, '');
+	const numbered = name => track > 0 ? name + ' track ' + (track + 1) : name;
+	const mentions = (text, words) => text.toLowerCase().replace(/[^a-z0-9]/g, '').includes(words.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
 	// one file holding a whole soundtrack (nsf, gbs...) is named after the game, so the track goes in the name
-	if (WHOLE_SOUNDTRACK.includes(path.posix.extname(catalogPath).slice(1).toLowerCase()) || !title) return clean(stem) + ' track ' + (track + 1);
+	if (WHOLE_SOUNDTRACK.includes(ext) || !title) return clean(stem) + ' track ' + (track + 1);
+	// HVSC: MUSICIANS/<letter>/<artist>/[...]<song>
+	if (parts[0] === 'High Voltage SID Collection') {
+		const artist = parts[1] === 'MUSICIANS' && parts.length > 4 ? parts[3] : folder;
+		return numbered(clean(artist) + ' ' + title);
+	}
+	// competitions: the song's own name already says who made it ("Artist - Title")
+	if (COMPETITIONS.includes(parts[0])) return numbered(title);
+	// collections arranged by artist: the folder is the artist
+	if (BY_ARTIST.includes(parts[0])) return numbered(mentions(title, clean(folder)) ? title : clean(folder) + ' ' + title);
 	// folders like "- Homebrew -" group files rather than naming a game
-	if (!folder || /^-.*-$/.test(folder.trim())) return title;
-	return title + ' ' + clean(folder);
+	if (!folder || /^-.*-$/.test(folder.trim())) return numbered(title);
+	return numbered(title + ' ' + clean(folder));
 }
 
 async function fetchFile (catalogPath) {
