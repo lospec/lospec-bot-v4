@@ -2,11 +2,16 @@
 //
 // ffmpeg handles ordinary audio files. Tracker modules are rendered with
 // libopenmpt instead, from the WebAssembly build in the chiptune3 package,
-// because the ffmpeg-static build for linux is compiled without it.
+// because the ffmpeg-static build for linux is compiled without it. Game-music
+// files (nsf, spc, vgm, sid, gsf, midi...) are rendered by chip2mp3, see
+// chip-render.js.
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
+import { CHIP_EXTENSIONS, renderChip } from './chip-render.js';
 
 export const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'oga', 'opus', 'wav', 'flac', 'm4a', 'aac', 'aif', 'aiff', 'wma'];
 export const TRACKER_EXTENSIONS = ['mod', 'xm', 's3m', 'it', 'mptm', 'mo3', '669', 'amf', 'ams', 'dbm', 'digi', 'dmf', 'dsm',
@@ -37,15 +42,28 @@ export function extensionOf (name) {
 
 export function isSupported (name) {
 	const extension = extensionOf(name);
-	return AUDIO_EXTENSIONS.includes(extension) || TRACKER_EXTENSIONS.includes(extension);
+	return AUDIO_EXTENSIONS.includes(extension) || TRACKER_EXTENSIONS.includes(extension) || CHIP_EXTENSIONS.includes(extension);
 }
 
-// Returns {name, buffer} as an mp3. Mp3s are returned untouched.
-export async function toMp3 (name, buffer) {
+// Returns {name, buffer} as an mp3. Mp3s are returned untouched. A game-music
+// file that loads others (a minigsf's gsflib, an mdx's pdx) needs `file`, its
+// path on disk with those beside it; `track` picks the track of a multi-track
+// file, counting from 0.
+export async function toMp3 (name, buffer, {file, track = 0} = {}) {
 	const extension = extensionOf(name);
 	if (extension === 'mp3') return {name, buffer};
 
 	const mp3Name = path.basename(name, path.extname(name)) + '.mp3';
+	if (CHIP_EXTENSIONS.includes(extension)) {
+		if (file) return {name: mp3Name, buffer: (await renderChip(file, track)).buffer};
+		const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'chip-'));
+		try {
+			const copy = path.join(folder, 'song.' + extension);
+			fs.writeFileSync(copy, buffer);
+			return {name: mp3Name, buffer: (await renderChip(copy, track)).buffer};
+		}
+		finally { fs.rmSync(folder, {recursive: true, force: true}); }
+	}
 	const mp3Args = ['-vn', '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', '-f', 'mp3', 'pipe:1'];
 
 	if (TRACKER_EXTENSIONS.includes(extension)) {

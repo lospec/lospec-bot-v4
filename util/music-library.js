@@ -243,17 +243,19 @@ export async function measureSong (song, buffer) {
 
 // Adds a song to a station, converting it to an mp3 first if it is something
 // else. Throws, with a message fit to show the uploader, if the file can't be
-// used, is already in the library, or its name is taken.
-export async function addSong (station, fileName, original) {
+// used, is already in the library, or its name is taken. `options` goes to
+// toMp3: the file on disk for game-music files that load others, and which
+// track of a multi-track file.
+export async function addSong (station, fileName, original, options = {}) {
 	await loadLibrary();
 	if (!STATIONS[station]) throw new Error('There is no station called "' + station + '".');
 	if (original.length > MAX_SONG_BYTES) throw new Error('Songs can be at most ' + (MAX_SONG_BYTES / 1024 / 1024) + 'MB.');
 
 	const cleanName = cleanSongName(fileName);
-	if (!isSupported(cleanName)) throw new Error(code(cleanName) + ' is not a supported file. Songs can be audio files or tracker modules.');
+	if (!isSupported(cleanName)) throw new Error(code(cleanName) + ' is not a supported file. Songs can be audio files, tracker modules or game-music files.');
 	if (extensionOf(cleanName) === 'mp3' && !looksLikeMp3(original)) throw new Error(code(cleanName) + ' is not an mp3 file.');
 
-	const {name, buffer} = await toMp3(cleanName, original);
+	const {name, buffer} = await toMp3(cleanName, original, options);
 
 	const id = md5(buffer);
 	const existing = findSong(id);
@@ -358,6 +360,40 @@ export async function moveSong (song, station) {
 	return moved;
 }
 
+// Gives a song a new name on its station, keeping its loudness
+export async function renameSong (song, name) {
+	await loadLibrary();
+	if (name === song.name) return song;
+	if (!isSongName(name)) throw new Error(code(name) + ' is not an mp3 name.');
+	if (library[song.station].some(other => other !== song && other.name.toLowerCase() === name.toLowerCase()))
+		throw new Error('The ' + STATIONS[song.station] + ' station already has a song called ' + code(name) + '.');
+
+	let renamed;
+	if (useSpaces) {
+		const from = SPACES_PREFIX + song.station + '/' + song.name;
+		await s3.send(new CopyObjectCommand({
+			Bucket: SPACES_BUCKET,
+			CopySource: SPACES_BUCKET + '/' + from.split('/').map(encodeURIComponent).join('/'),
+			Key: SPACES_PREFIX + song.station + '/' + name,
+			ACL: 'public-read',
+			ContentType: 'audio/mpeg',
+			MetadataDirective: 'REPLACE',
+		}));
+		await s3.send(new DeleteObjectCommand({Bucket: SPACES_BUCKET, Key: from}));
+		renamed = spacesSong(song.station, name, song.id);
+	}
+	else {
+		const file = path.join(LOCAL_FOLDER, song.station, name);
+		fs.renameSync(song.source, file);
+		renamed = {id: song.id, name, station: song.station, source: path.resolve(file)};
+	}
+
+	library[song.station] = library[song.station].map(other => other === song ? renamed : other);
+	library[song.station].sort(byName);
+	notify([renamed], [song]);
+	return renamed;
+}
+
 function saveLevel (id, level) {
 	return withLock('music-levels', async () => {
 		//merged with what is saved, so measurements written by something else
@@ -414,11 +450,23 @@ export function code (name) {
 	return '`' + String(name).replace(/`/g, "'") + '`';
 }
 
-function cleanSongName (fileName) {
-	return path.basename(String(fileName))
-		.replace(/[\x00-\x1f\\/:*?"<>|]/g, '')
-		.replace(/\s+/g, ' ')
-		.trim();
+// Every song is named as a lowercase slug - `track-name-game-name.mp3` - kept
+// with its original extension so the converter still knows what it is.
+// An extension left inside the name by an earlier conversion (`song.xm.mp3`)
+// is dropped. Letters from other scripts are kept, so a Japanese title doesn't
+// vanish.
+export function cleanSongName (fileName) {
+	const base = path.basename(String(fileName));
+	const extension = extensionOf(base);
+	let stem = extension ? base.slice(0, -(extension.length + 1)) : base;
+	while (isSupported(stem)) stem = stem.slice(0, stem.lastIndexOf('.'));
+	const slug = stem.normalize('NFKD').replace(/\p{M}/gu, '')
+		.toLowerCase()
+		.replace(/&/g, ' and ')
+		.replace(/['’`]/g, '')
+		.replace(/[^\p{L}\p{N}]+/gu, '-')
+		.replace(/^-+|-+$/g, '');
+	return (slug || 'untitled') + (extension ? '.' + extension : '');
 }
 
 function isSongName (name) {

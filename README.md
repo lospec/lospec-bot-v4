@@ -205,7 +205,7 @@ any others made with `/music-create-station`.
 | `/music queue` | what is playing, and the songs requested after it |
 | `/music list [station]` | a text file of every song on a station (default: all of them) |
 | `/music stop` | stop playing and leave the voice channel |
-| `/music-upload <song> <station>` | add a song to a station |
+| `/music-upload <station> [song] [link] [track] [name]` | add a song to a station, from a file or a chiptune.app/gifx.co link |
 | `/music-delete <song>` | remove a song from its station for good |
 | `/music-move <song> <station>` | move a song to another station |
 | `/music-create-station <name>` | make a new, empty station |
@@ -235,6 +235,27 @@ converted with ffmpeg when they are added, and tracker modules (mod, xm, s3m,
 it and the rest libopenmpt reads) are rendered with the WebAssembly build of
 libopenmpt from the `chiptune3` package. Anything already on either station is
 rejected, compared after conversion.
+
+Game-music files - nsf, nsfe, spc, gbs, vgm/vgz, sid, gsf/minigsf, usf/miniusf,
+mdx, midi and the rest - are rendered with [chip2mp3](https://github.com/skeddles/chip2mp3),
+which runs the same emulators as chiptune.app (`util/chip-render.js`). A song plays
+its intro and loop once, then fades out; songs under a minute repeat their loop up
+to 3 times, as long as that stays within 2:30. A minigsf, miniusf or mdx needs its
+gsflib, usflib or pdx attached to the same message. `track` picks a track of a
+file that holds a whole soundtrack (an nsf, say), counting from 1.
+
+`link` takes a chiptune.app share link or a gifx.co link. Files are only ever
+downloaded from gifx.co, along with any library files they load; chiptune.app
+itself is never contacted. A share link names the song by a hash of its file, so
+it is looked up in an index of hashed collections kept privately on Spaces under
+`music/chiptune-ids/` (put there with `node scripts/upload-chiptune-ids.js <folder>`);
+a song that isn't indexed needs its gifx.co link instead.
+
+chip2mp3's repository is private, so the bot downloads its build from Spaces
+(`music/bin/chip2mp3-<version>/`, uploaded with `node scripts/upload-chip2mp3.js <folder>`)
+into `_bin` the first time it is needed, along with HVSC's `Songlengths.md5` for SID
+lengths. `CHIP2MP3=<path>` uses a local build instead. `node scripts/render-chip.js
+<file> <out.mp3> [--track N]` renders a file the same way, outside discord.
 
 Every song's loudness is measured once and saved in `levels.json` next to the
 stations, and the player turns each song up or down to the same loudness as it
