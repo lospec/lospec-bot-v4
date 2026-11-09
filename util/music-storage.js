@@ -2,7 +2,7 @@
 // builds the bot renders game-music files with, and the chiptune.app id index.
 // They aren't public on the CDN; only the bot reads them, with the Spaces keys.
 
-import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const BUCKET = 'lospec';
 const PREFIX = 'music/';
@@ -30,6 +30,11 @@ export async function readStored (name) {
 export async function store (name, body, contentType = 'application/octet-stream') {
 	if (!useSpaces) throw new Error('Set SPACES_KEY and SPACES_SECRET to store files on Spaces.');
 	await s3.send(new PutObjectCommand({Bucket: BUCKET, Key: PREFIX + name, Body: body, ContentType: contentType, ACL: 'private'}));
+}
+
+export async function removeStored (name) {
+	if (!useSpaces) throw new Error('Set SPACES_KEY and SPACES_SECRET to store files on Spaces.');
+	await s3.send(new DeleteObjectCommand({Bucket: BUCKET, Key: PREFIX + name}));
 }
 
 // The names (relative to music/) of stored files starting with `prefix`

@@ -247,7 +247,8 @@ file that holds a whole soundtrack (an nsf, say), counting from 1.
 `link` takes a chiptune.app share link or a gifx.co link. Files are only ever
 downloaded from gifx.co, along with any library files they load; chiptune.app
 itself is never contacted. A share link names the song by a hash of its file, so
-it is looked up in an index of hashed collections kept privately on Spaces under
+it is looked up in an index of hashed collections kept privately on Spaces, split
+by the id's first character, under
 `music/chiptune-ids/` (put there with `node scripts/upload-chiptune-ids.js <folder>`);
 a song that isn't indexed needs its gifx.co link instead.
 

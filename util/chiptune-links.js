@@ -6,8 +6,8 @@
 // ids to paths, and the bot never asks chiptune.app (it bans clients that send
 // it bursts of requests), so ids are looked up in an index of hashed
 // collections kept privately on Spaces under music/chiptune-ids/*.tsv
-// ("id <TAB> path [<TAB> other possible path...]"), put there by
-// scripts/upload-chiptune-ids.js. Files are only ever downloaded from gifx.co,
+// ("id <TAB> path [<TAB> other possible path...]"), split into shards by the id's
+// first character and put there by scripts/upload-chiptune-ids.js. Files are only ever downloaded from gifx.co,
 // and checked against the id.
 
 import crypto from 'crypto';
@@ -137,19 +137,23 @@ function sidecarsOf (file, data) {
 	return [];
 }
 
-// The possible catalog paths for an id, from the index
+// Which index shard an id is in (case matters in ids, but not to every filesystem)
+export function shardOf (id) {
+	const c = id[0];
+	return 'shard-' + (/[A-Z]/.test(c) ? 'u' + c : /[a-z]/.test(c) ? 'l' + c : c === '-' ? 'dash' : c === '_' ? 'under' : c);
+}
+
+// The possible catalog paths for an id, from its index shard
 async function lookUp (id) {
 	await refreshIndex();
-	if (!fs.existsSync(INDEX)) return [];
-	for (const name of fs.readdirSync(INDEX).filter(n => n.endsWith('.tsv')).sort()) {
-		const text = fs.readFileSync(path.join(INDEX, name), 'utf8');
-		let at = text.startsWith(id + '\t') ? 0 : text.indexOf('\n' + id + '\t');
-		if (at < 0) continue;
-		if (at > 0) at += 1;
-		const end = text.indexOf('\n', at);
-		return text.slice(at, end < 0 ? text.length : end).trim().split('\t').slice(1);
-	}
-	return [];
+	const file = path.join(INDEX, shardOf(id) + '.tsv');
+	if (!fs.existsSync(file)) return [];
+	const text = fs.readFileSync(file, 'utf8');
+	let at = text.startsWith(id + '\t') ? 0 : text.indexOf('\n' + id + '\t');
+	if (at < 0) return [];
+	if (at > 0) at += 1;
+	const end = text.indexOf('\n', at);
+	return text.slice(at, end < 0 ? text.length : end).trim().split('\t').slice(1);
 }
 
 let refreshing = null, refreshed = 0;
@@ -157,12 +161,16 @@ function refreshIndex () {
 	if (Date.now() - refreshed < INDEX_REFRESH) return Promise.resolve();
 	refreshing ||= (async () => {
 		fs.mkdirSync(INDEX, {recursive: true});
-		for (const {name, modified} of await listStored('chiptune-ids/')) {
+		const shards = (await listStored('chiptune-ids/')).filter(f => /\/shard-[^/]+\.tsv$/.test(f.name));
+		if (!shards.length) return;  // a failed or empty listing keeps what's cached
+		for (const {name, modified} of shards) {
 			const local = path.join(INDEX, path.basename(name));
 			if (fs.existsSync(local) && fs.statSync(local).mtimeMs >= new Date(modified).getTime()) continue;
 			const data = await readStored(name);
 			if (data) fs.writeFileSync(local, data);
 		}
+		const current = new Set(shards.map(f => path.basename(f.name)));
+		for (const name of fs.readdirSync(INDEX)) if (!current.has(name)) fs.rmSync(path.join(INDEX, name), {force: true});
 		refreshed = Date.now();
 	})().catch(err => console.error('Could not refresh the chiptune.app index:', err.message)).finally(() => refreshing = null);
 	return refreshing;
