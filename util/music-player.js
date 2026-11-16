@@ -3,7 +3,7 @@
 // A session plays requested songs first, in the order they were asked for, and
 // otherwise works through its station in a shuffled order, reshuffling once
 // every song has had a turn. Each song is announced in the voice channel's chat
-// as it starts.
+// as it starts, and so is the session starting and stopping.
 //
 // That chat is the only place anything about the music is posted publicly.
 // Commands can be used from any channel, but elsewhere they only get an
@@ -83,7 +83,8 @@ export function getSession (guildId) {
 
 // Joins (or moves to) a voice channel, and starts playing if nothing is.
 // A requested song is queued before anything starts, so it plays first.
-export async function join (voiceChannel, station, song) {
+// Starting a session is announced, naming `user` - whoever started it.
+export async function join (voiceChannel, station, song, user) {
 	let session = sessions.get(voiceChannel.guild.id);
 
 	if (!session) {
@@ -146,7 +147,7 @@ export async function join (voiceChannel, station, song) {
 						entersState(connection, VoiceConnectionStatus.Connecting, 5000),
 					]);
 				}
-				catch (err) { if (session.connection === connection) leave(session.guildId); }
+				catch (err) { if (session.connection === connection) leave(session.guildId, 'The music stopped because the bot was disconnected from the voice channel.'); }
 			});
 		}
 
@@ -162,6 +163,10 @@ export async function join (voiceChannel, station, song) {
 	}
 
 	checkListeners(session);
+	if (!session.started) {
+		session.started = true;
+		await announce(session, (user ? user.toString() + ' started' : 'Started') + ' the ' + STATIONS[session.station] + ' station.');
+	}
 	if (!session.current || switching) skip(session);
 	return session;
 }
@@ -199,9 +204,12 @@ export function setStation (session, station) {
 	skip(session);
 }
 
-export function leave (guildId) {
+// Ends the session. `reason` is posted in the voice channel's chat, if the
+// session had started - /music stop posts its own message instead.
+export function leave (guildId, reason) {
 	const session = sessions.get(guildId);
 	if (!session) return;
+	if (reason && session.started) announce(session, reason);
 	session.ended = true;
 	sessions.delete(guildId);
 	clearTimeout(session.leaveTimer);
@@ -339,7 +347,7 @@ function checkListeners (session) {
 		session.leaveTimer = null;
 	}
 	else if (!session.leaveTimer) {
-		session.leaveTimer = setTimeout(() => leave(session.guildId), LEAVE_DELAY);
+		session.leaveTimer = setTimeout(() => leave(session.guildId, 'The music stopped because nobody was listening.'), LEAVE_DELAY);
 	}
 }
 

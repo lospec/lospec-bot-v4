@@ -14,6 +14,6 @@ export default async (interaction) => {
 	//the first station that has songs, if chill has none
 	const station = findStation(typed)
 		|| (getSession(interaction.guildId) ? null : ['chill', ...Object.keys(STATIONS)].find(slug => listSongs(slug).length) || 'chill');
-	const session = await join(voiceChannel, station);
+	const session = await join(voiceChannel, station, null, interaction.user);
 	await interaction.editReply({content: 'Playing the ' + STATIONS[session.station] + ' station in ' + voiceChannel.toString() + '.'});
 };

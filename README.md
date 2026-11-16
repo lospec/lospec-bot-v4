@@ -211,7 +211,8 @@ any others made with `/music-create-station`.
 | `/music-move <song> <station>` | move a song to another station |
 | `/music-create-station <name>` | make a new, empty station |
 
-Each song is announced in the voice channel's chat as it starts, and that chat
+Each song is announced in the voice channel's chat as it starts, as is the music
+starting and stopping - and why, when it stops by itself. That chat
 is the only place the music posts anything publicly - commands used elsewhere
 get a reply only the person using them can see. The bot leaves a minute after
 the last person does.

@@ -20,6 +20,6 @@ export default async (interaction) => {
 	if (!voiceChannel) return interaction.reply({content: 'Join a voice channel first.', ephemeral: true});
 
 	await interaction.deferReply({ephemeral: true});
-	await join(voiceChannel, song.station, song);
+	await join(voiceChannel, song.station, song, interaction.user);
 	await interaction.editReply({content: 'Playing ' + code(song.name) + ', then the ' + STATIONS[song.station] + ' station, in ' + voiceChannel.toString() + '.'});
 };
