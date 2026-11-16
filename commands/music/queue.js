@@ -11,6 +11,7 @@ export default async (interaction) => {
 	const lines = [
 		'Playing: ' + (session.current ? code(session.current.name) : 'nothing'),
 		'Station: ' + STATIONS[session.station],
+		'Volume: ' + session.volume + '%',
 		'',
 		songs.length ? 'Requested:' : 'No songs requested. The station plays next.',
 		...songs.slice(0, MAX_LISTED).map((song, i) => (i + 1) + '. ' + code(song.name)),

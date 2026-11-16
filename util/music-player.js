@@ -9,6 +9,11 @@
 // Commands can be used from any channel, but elsewhere they only get an
 // ephemeral reply.
 //
+// The volume belongs to the session, so it is the same for everybody
+// listening. It scales every song after levelling, so songs stay as loud as
+// each other. It changes the song that is playing straight away and lasts until
+// the bot leaves.
+//
 // When nobody but bots is left in the channel, the session ends after
 // LEAVE_DELAY unless somebody comes back.
 
@@ -28,6 +33,7 @@ import { levelFilter } from './music-audio.js';
 const LEAVE_DELAY = 60 * 1000;
 const LIBRARY_REFRESH = 5 * 60 * 1000;
 const CONNECT_TIMEOUT = 20 * 1000;
+const DEFAULT_VOLUME = 100;
 
 // guildId -> session
 const sessions = new Map();
@@ -90,6 +96,7 @@ export async function join (voiceChannel, station, song) {
 			ffmpeg: null,
 			leaveTimer: null,
 			ended: false,
+			volume: DEFAULT_VOLUME,
 			player: createAudioPlayer({behaviors: {noSubscriber: NoSubscriberBehavior.Play}}),
 		};
 		session.player.on(AudioPlayerStatus.Idle, () => { if (!session.ended) playNext(session); });
@@ -180,6 +187,12 @@ export function skip (session) {
 	}
 }
 
+// A percentage, scaled so the steps sound even rather than by amplitude
+export function setVolume (session, volume) {
+	session.volume = volume;
+	session.player.state.resource?.volume?.setVolumeLogarithmic(volume / 100);
+}
+
 export function setStation (session, station) {
 	session.station = station;
 	session.shuffled = [];
@@ -256,8 +269,8 @@ async function playNext (session) {
 		'-i', 'pipe:0',
 		'-vn',
 		...(filter ? ['-af', filter] : []),
-		'-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2',
-		'-f', 'ogg', 'pipe:1',
+		'-ar', '48000', '-ac', '2',
+		'-f', 's16le', 'pipe:1',
 	], {stdio: ['pipe', 'pipe', 'pipe']});
 	//a song cut short makes ffmpeg complain about its output closing, which
 	//is expected, so only the current one is listened to
@@ -268,7 +281,11 @@ async function playNext (session) {
 	ffmpeg.stdin.end(audio);
 	session.ffmpeg = ffmpeg;
 
-	session.player.play(createAudioResource(ffmpeg.stdout, {inputType: StreamType.OggOpus}));
+	// raw audio, so the volume is applied before it is encoded for discord and
+	// a change is heard straight away
+	const resource = createAudioResource(ffmpeg.stdout, {inputType: StreamType.Raw, inlineVolume: true});
+	resource.volume.setVolumeLogarithmic(session.volume / 100);
+	session.player.play(resource);
 	await announce(session, '🎵 ' + code(song.name));
 }
 

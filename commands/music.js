@@ -55,6 +55,21 @@ export const config = {
 			],
 		},
 		{
+			name: 'volume',
+			description: 'Turn the music up or down for everybody listening, until the bot leaves',
+			type: ApplicationCommandOptionType.Subcommand,
+			options: [
+				{
+					name: 'volume',
+					description: 'Percent of full volume (default: 100)',
+					type: ApplicationCommandOptionType.Integer,
+					required: true,
+					min_value: 1,
+					max_value: 100,
+				},
+			],
+		},
+		{
 			name: 'list',
 			description: 'Get a file listing every song on a station',
 			type: ApplicationCommandOptionType.Subcommand,

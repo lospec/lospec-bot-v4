@@ -202,7 +202,8 @@ any others made with `/music-create-station`.
 | `/music play <song>` | queue a song; requested songs play before the station carries on |
 | `/music skip` | skip the song that is playing |
 | `/music station <station>` | switch to another station |
-| `/music queue` | what is playing, and the songs requested after it |
+| `/music volume <1-100>` | turn the music down (or back up) for everybody listening, until the bot leaves |
+| `/music queue` | what is playing, the volume, and the songs requested after it |
 | `/music list [station]` | a text file of every song on a station (default: all of them) |
 | `/music stop` | stop playing and leave the voice channel |
 | `/music-upload <station> [song] [link] [track] [name]` | add a song to a station, from a file or a chiptune.app/gifx.co link |
@@ -276,6 +277,11 @@ plays, so the files themselves are never re-encoded. Quiet songs with loud
 peaks are only turned up as far as a limiter can keep them from clipping. Songs
 without a measurement - from before this existed, or put on the CDN by hand -
 are measured in the background when the bot starts.
+
+`/music volume` scales the whole session on top of that levelling, so songs
+stay as loud as each other. The player sends discord raw audio and encodes it
+itself (with `opusscript`), which is what lets a volume change take effect in
+the middle of a song. It resets to 100% when the bot leaves.
 
 ## Where songs are kept
 
