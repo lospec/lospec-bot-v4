@@ -1,7 +1,8 @@
 // Adding songs from discord attachments and from chiptune.app/gifx.co links,
 // shared by /music-upload and the "Add to music station" message command.
 // Anything that isn't an mp3 - other audio files, tracker modules and
-// game-music files - is converted to one.
+// game-music files - is converted to one. Links that can't be found, and files
+// that can't be played, are recorded by music-misses.js to be tried again later.
 //
 // These and the other song-managing commands are only visible to
 // administrators until they are given to other roles or members in Server
@@ -17,6 +18,7 @@ import { STATIONS, MAX_SONG_BYTES, addSong, loadLibrary, code } from './music-li
 import { isSupported, extensionOf } from './music-audio.js';
 import { SIDECAR_EXTENSIONS } from './chip-render.js';
 import { parseLink, downloadLink, nameFor, songMeta } from './chiptune-links.js';
+import { recordLinkMiss, recordFormatMiss } from './music-misses.js';
 
 export const UPLOAD_PERMISSION = String(PermissionFlagsBits.Administrator);
 
@@ -33,12 +35,16 @@ export async function addAttachments (interaction, station, attachments, {track,
 		for (const attachment of attachments) {
 			const sidecar = SIDECAR_EXTENSIONS.includes(extensionOf(attachment.name));
 			try {
-				if (!sidecar && !isSupported(attachment.name)) throw new Error(code(attachment.name) + ' is not a supported file. Songs can be audio files, tracker modules or game-music files.');
 				if (attachment.size > MAX_SONG_BYTES) throw new Error(code(attachment.name) + ' is over ' + (MAX_SONG_BYTES / 1024 / 1024) + 'MB.');
 				const response = await fetch(attachment.url);
 				if (!response.ok) throw new Error('Could not download ' + code(attachment.name) + ' from discord (' + response.status + ').');
+				const data = Buffer.from(await response.arrayBuffer());
+				if (!sidecar && !isSupported(attachment.name)) {
+					recordFormatMiss({name: attachment.name, data, station, reason: 'unsupported format', user: interaction.user?.username});
+					throw new Error(code(attachment.name) + ' is not a supported file. Songs can be audio files, tracker modules or game-music files.');
+				}
 				const file = path.join(folder, path.basename(attachment.name));
-				fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()));
+				fs.writeFileSync(file, data);
 				if (!sidecar) songs.push({name: attachment.name, file});
 			}
 			catch (err) {
@@ -55,6 +61,8 @@ export async function addAttachments (interaction, station, attachments, {track,
 			}
 			catch (err) {
 				console.error('music upload failed:', err.message);
+				// a game-music file chip2mp3 can't render yet
+				if (err.reason) recordFormatMiss({name: song.name, data: fs.readFileSync(song.file), station, reason: err.reason, user: interaction.user?.username});
 				lines.push(err.message);
 			}
 		}
@@ -79,6 +87,8 @@ export async function addLink (interaction, station, text, {track, name} = {}) {
 	}
 	catch (err) {
 		console.error('music link upload failed:', err.message);
+		// not in the index, not on gifx.co, or not renderable yet
+		if (err.reason) recordLinkMiss({text, link, station, reason: err.reason, user: interaction.user?.username});
 		await interaction.editReply(err.message);
 	}
 	finally { fs.rmSync(folder, {recursive: true, force: true}); }

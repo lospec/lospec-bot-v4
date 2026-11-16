@@ -25,20 +25,44 @@ export function songMeta (file, data, track = 0) {
 }
 
 const PARSERS = {
-	vgm: vgm,
+	// a .vgm is often gzipped too (Game Gear and Master System rips), not just .vgz
+	vgm: data => vgm(data[0] === 0x1f && data[1] === 0x8b ? zlib.gunzipSync(data) : data),
 	vgz: data => vgm(data[0] === 0x1f && data[1] === 0x8b ? zlib.gunzipSync(data) : data),
+	mid: midi, midi: midi,
 	nsf: data => ({game: text(data, 0x0e, 0x2e), artist: text(data, 0x2e, 0x4e)}),
 	gbs: data => ({game: text(data, 0x10, 0x30), artist: text(data, 0x30, 0x50)}),
 	nsfe: nsfe,
 	spc: data => data.length >= 0x100 && data[0x23] === 0x1a
 		? {title: text(data, 0x2e, 0x4e), game: text(data, 0x4e, 0x6e), artist: text(data, 0xb1, 0xd1)} : {},
 	sid: data => ({title: text(data, 0x16, 0x36), artist: text(data, 0x36, 0x56)}),
+	// GoatTracker 2: "GTS3".."GTS5", then the song name, author and copyright, 32 bytes each
+	sng: data => /^GTS[345]$/.test(data.toString('latin1', 0, 4)) ? {title: text(data, 4, 36), artist: text(data, 36, 68)} : {},
 	minigsf: psf, gsf: psf, miniusf: psf, usf: psf,
 	mod: data => tracker(data, text(data, 0, 20), modNames(data)),
 	xm: data => tracker(data, text(data, 17, 37), xmNames(data)),
 	it: data => tracker(data, text(data, 4, 30), itNames(data)),
 	s3m: data => tracker(data, text(data, 0, 28), s3mNames(data)),
 };
+
+// A MIDI file's first track: its first sequence name (FF 03) is the song's title,
+// and the copyright (FF 02) or a text event (FF 01) usually says who wrote it
+function midi (data) {
+	if (data.toString('latin1', 0, 4) !== 'MThd') return {};
+	const at = 8 + data.readUInt32BE(4);
+	if (data.toString('latin1', at, at + 4) !== 'MTrk') return {};
+	const end = Math.min(data.length, at + 8 + data.readUInt32BE(at + 4));
+	const events = {};
+	// only the meta events are wanted, so scan for FF <type> <short length> rather than parse every event
+	for (let i = at + 8; i + 2 < end; i++) {
+		if (data[i] !== 0xff || data[i + 1] < 1 || data[i + 1] > 3 || data[i + 2] > 0x7f) continue;
+		const value = clean(data.toString('latin1', i + 3, i + 3 + data[i + 2]));
+		if (value) (events[data[i + 1]] ||= []).push(value);
+		i += 2 + data[i + 2];
+	}
+	const credit = (events[2] || []).map(c => c.match(/\bby\s+(.+?)\.?$/i)?.[1]).find(Boolean)
+		|| creditIn(events[1] || []) || (events[1] || []).find(t => /^[A-Z][\w.'-]*(?: [A-Z][\w.'-]*){1,2}$/.test(t));
+	return {title: events[3]?.[0], artist: credit};
+}
 
 function vgm (data) {
 	if (data.toString('latin1', 0, 4) !== 'Vgm ') return {};
@@ -74,17 +98,21 @@ function tracker (data, title, names) {
 	return {title, artist: creditIn(names)};
 }
 
+// sample names like "kick drum / snare" pair instruments, not an artist and group
+const INSTRUMENT = /\b(kick|snare|drums?|bass|lead|hi-?hats?|hats?|pads?|chords?|strings?|piano|synth|perc\w*|claps?|toms?|crash|ride|cymbals?|guitar|organ|bells?|choir|flute|brass|arp\w*|fx|sfx|loops?|samples?|voice|vox)\b/i;
+
 // Who a module's instrument and sample names credit, or nothing
 export function creditIn (names) {
-	const lines = names.map(clean).filter(Boolean);
+	// decoration around a credit, as in "# mc spicy / savior" or "<x / group 1995>"
+	const lines = names.map(clean).map(line => line && line.replace(/^[#<>*~=.:\s-]+|[#<>*~=.:\s-]+$/g, '')).filter(Boolean);
 	for (const line of lines) {
 		// "music by arachno", "composed by: x", "(c) x"
 		const by = line.match(/^(?:.*\b(?:music|composed|written|made|tune|song|module)\s+)?by[:\s]+([^\s/\\|,;!()[\]{}<>@#][^/\\|,;!()[\]{}<>@#]{1,24}?)(?:\s*[/\\|,;!(<@#]|$)/i)
 			|| line.match(/^\(c\)\s*\d*\s*([^\s/\\|,;!()[\]{}<>@][^/\\|,;!()[\]{}<>@]{1,24}?)(?:\s*[/\\|,;!(<@]|$)/i);
 		if (by) return by[1].trim();
-		// "arachno \ coolphat" or "arachno / tump": artist then group
-		const group = line.match(/^([A-Za-z0-9][\w.'-]{1,19})\s*[\\/|#]\s*[A-Za-z0-9][\w .'-]{1,24}$/);
-		if (group && !/\.(wav|aif|aiff|smp|raw|iff|8svx)$/i.test(line)) return group[1];
+		// "arachno \ coolphat" or "mc spicy / savior": artist (one or two words) then group
+		const group = line.match(/^([A-Za-z0-9][\w.'-]{1,19}(?: [A-Za-z0-9][\w.'-]{0,11})?)\s*[\\/|#]\s*[A-Za-z0-9][\w .'-]{1,24}$/);
+		if (group && !/\.(wav|aif|aiff|smp|raw|iff|8svx)$/i.test(line) && !INSTRUMENT.test(line)) return group[1];
 	}
 	return undefined;
 }

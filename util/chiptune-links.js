@@ -51,10 +51,12 @@ export function songId (buffer) {
 }
 
 // Downloads a parsed link's song, and any .gsflib/.usflib/.pdx it loads, into
-// `folder`. Returns {file, path, track}. Throws with a message fit for discord.
+// `folder`. Returns {file, path, track}. Throws with a message fit for discord,
+// and a `reason` ('not indexed' or 'not downloadable') when the song can't be
+// found, for util/music-misses.js.
 export async function downloadLink (link, folder) {
 	const paths = link.path ? [link.path] : await lookUp(link.id);
-	if (!paths.length) throw new Error('That chiptune.app song isn\'t in the bot\'s index yet. Use its gifx.co link instead: open the game or artist folder in chiptune.app, and add the file name to the folder\'s path.');
+	if (!paths.length) throw miss('That chiptune.app song isn\'t in the bot\'s index yet. Use its gifx.co link instead: open the game or artist folder in chiptune.app, and add the file name to the folder\'s path.', 'not indexed');
 	for (const candidate of paths) {
 		const data = await fetchFile(candidate);
 		if (!data || (link.id && songId(data) !== link.id)) continue;
@@ -68,7 +70,11 @@ export async function downloadLink (link, folder) {
 		}
 		return {file, path: candidate, track: link.track};
 	}
-	throw new Error(link.id ? 'The file for that chiptune.app link could not be downloaded from gifx.co.' : 'Could not download ' + link.path + ' from gifx.co.');
+	throw miss(link.id ? 'The file for that chiptune.app link could not be downloaded from gifx.co.' : 'Could not download ' + link.path + ' from gifx.co.', 'not downloadable');
+}
+
+function miss (message, reason) {
+	return Object.assign(new Error(message), {reason});
 }
 
 // A song name for a catalog path, before slugging: the track's title and the
@@ -92,6 +98,8 @@ export function nameFor (catalogPath, track = 0, meta = {}) {
 		const artist = parts[1] === 'MUSICIANS' && parts.length > 4 ? parts[3] : folder;
 		return numbered(clean(artist) + ' ' + title);
 	}
+	// Game MIDI folders are the game, as "Age of Empires 2 – The Conquerors (Windows, 2000)"
+	if (parts[0] === 'Game MIDI' && meta.title && !meta.game && folder) meta = {...meta, game: clean(folder).replace(/\s+[–-]\s+/g, ' ')};
 	// the file's own tags: a track title (and its game), or a title and who made it
 	const whole = WHOLE_SOUNDTRACK.includes(ext);
 	if (meta.title && meta.game) return (whole && ext !== 'nsfe' ? numbered : name => name)(meta.title + ' ' + meta.game);

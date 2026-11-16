@@ -1,4 +1,4 @@
-// Rendering game-music files - nsf, spc, vgm, sid, gsf, usf, mdx, midi and the
+// Rendering game-music files - nsf, spc, vgm, sid, GoatTracker sng, gsf, usf, mdx, midi and the
 // rest - to mp3, with chip2mp3 (github.com/skeddles/chip2mp3), which runs the
 // same emulators and player logic as chiptune.app compiled natively.
 //
@@ -26,7 +26,7 @@ import { readStored } from './music-storage.js';
 
 // Formats chip2mp3 plays that aren't plain audio or tracker modules
 export const CHIP_EXTENSIONS = ['nsf', 'nsfe', 'spc', 'gbs', 'ay', 'hes', 'kss', 'sap', 'vgm', 'vgz', 'gym', 's98', 'dro',
-	'sid', 'mus', 'usf', 'miniusf', 'gsf', 'minigsf', 'mdx', 'v2m', 'mid', 'midi', 'smf', 'rmi', 'kar'];
+	'sid', 'mus', 'sng', 'usf', 'miniusf', 'gsf', 'minigsf', 'mdx', 'v2m', 'mid', 'midi', 'smf', 'rmi', 'kar'];
 // Files other songs load from beside them, rather than songs themselves
 export const SIDECAR_EXTENSIONS = ['gsflib', 'usflib', 'pdx'];
 const MIDI_EXTENSIONS = ['mid', 'midi', 'smf', 'rmi', 'kar'];
@@ -63,7 +63,10 @@ export async function renderChip (file, track = 0) {
 		const ext = extension(file);
 		let wav, seconds, how, natural = false;
 
-		const vgm = ['vgm', 'vgz'].includes(ext) ? vgmLoop(fs.readFileSync(file)) : null;
+		let vgm = ['vgm', 'vgz'].includes(ext) ? vgmLoop(fs.readFileSync(file)) : null;
+		// a header "loop" longer than NATURAL_LIMIT (Sensible Soccer's GG title says 611s) means the rip
+		// didn't mark the real loop, so the audio is searched for one like any other file
+		if (vgm && vgm.intro + vgm.loop > NATURAL_LIMIT) vgm = null;
 		if (vgm) {
 			const loops = vgm.loop ? loopCount(vgm.intro, vgm.loop) : 1;
 			seconds = vgm.loop ? vgm.intro + vgm.loop * loops : vgm.intro;
@@ -100,7 +103,7 @@ export async function renderChip (file, track = 0) {
 		}
 
 		const peak = await peakDb(wav);
-		if (peak < -60) throw new Error('This file renders as silence.');
+		if (peak < -60) throw Object.assign(new Error('This file renders as silence.'), {reason: 'renders as silence'});
 		const gain = (-1 - peak).toFixed(2) + 'dB';
 		const mp3Args = ['-vn', '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', '-f', 'mp3', 'pipe:1'];
 		let args;
@@ -147,7 +150,7 @@ async function chip2mp3 (file, track, folder, seconds) {
 	if (seconds) args.push('--endless', '--max-length', seconds.toFixed(2));
 	const {stdout, stderr, code} = await run(exe, [...args, file]);
 	const wav = findFiles(out, '.wav')[0];
-	if (code || !wav) throw new Error('chip2mp3 could not render this file: ' + (stdout + stderr).toString().trim().split('\n').pop());
+	if (code || !wav) throw Object.assign(new Error('chip2mp3 could not render this file: ' + (stdout + stderr).toString().trim().split('\n').pop()), {reason: 'render failed'});
 	return wav;
 }
 

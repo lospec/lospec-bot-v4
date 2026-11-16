@@ -236,8 +236,8 @@ it and the rest libopenmpt reads) are rendered with the WebAssembly build of
 libopenmpt from the `chiptune3` package. Anything already on either station is
 rejected, compared after conversion.
 
-Game-music files - nsf, nsfe, spc, gbs, vgm/vgz, sid, gsf/minigsf, usf/miniusf,
-mdx, midi and the rest - are rendered with [chip2mp3](https://github.com/skeddles/chip2mp3),
+Game-music files - nsf, nsfe, spc, gbs, vgm/vgz, sid, GoatTracker 2 sng,
+gsf/minigsf, usf/miniusf, mdx, midi and the rest - are rendered with [chip2mp3](https://github.com/skeddles/chip2mp3),
 which runs the same emulators as chiptune.app (`util/chip-render.js`). A song plays
 its intro and loop once, then fades out; songs under a minute repeat their loop up
 to 3 times, as long as that stays within 2:30. A minigsf, miniusf or mdx needs its
@@ -251,6 +251,13 @@ it is looked up in an index of hashed collections kept privately on Spaces, spli
 by the id's first character, under
 `music/chiptune-ids/` (put there with `node scripts/upload-chiptune-ids.js <folder>`);
 a song that isn't indexed needs its gifx.co link instead.
+
+Songs that can't be added are recorded privately on Spaces by
+`util/music-misses.js`, so they can be tried again after the index grows or chip2mp3
+learns a format: chiptune.app links that aren't indexed or can't be downloaded from
+gifx.co, and files that aren't a supported format or don't render (those files are
+kept under `music/misses/`). `node scripts/music-misses.js` lists them;
+`get <folder>` downloads the kept files, and `done <key>...` clears entries.
 
 A linked song is named from what the file says about itself, the same header
 fields chiptune.app reads (`util/song-meta.js`): its title and game, or its title
